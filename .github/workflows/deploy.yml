@@ -1,0 +1,193 @@
+# Deploys Padel360 on every push to main (or by hand: Actions tab → deploy → Run workflow).
+#   1. database – applies new files in supabase/migrations and sets the sys admin email
+#   2. site     – publishes public/ to Cloudflare Pages (creates the project on the first run)
+#   3. auth     – tells Supabase sign-in which site address to send people back to
+#   4. report   – writes a short status (no secrets) to the "ci-status" branch
+# Repository secrets used (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL        Supabase → Connect → Session pooler connection string (with the database password)
+#   SUPABASE_ACCESS_TOKEN  Supabase → Account → Access Tokens
+#   SYSADMIN_EMAIL         the owner's sign-in email; that account becomes sys admin
+#   DEMO_PASSWORD          optional; creates/updates the demo accounts (sysadmin|clubadmin|coach|player@coachmohsen.dev)
+#   CLOUDFLARE_API_TOKEN   Cloudflare custom token: Account · Cloudflare Pages · Edit
+#   CLOUDFLARE_ACCOUNT_ID  Cloudflare account id
+# Optional sign-in providers: GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET, APPLE_SERVICES_ID + APPLE_SECRET
+# Email confirmation is left as configured in Supabase (on by default).
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+permissions:
+  contents: read
+env:
+  PAGES_PROJECT: coachmohsen
+
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.run.outputs.status }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: run
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SYSADMIN_EMAIL: ${{ secrets.SYSADMIN_EMAIL }}
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+        run: |
+          if [ -z "$DB_URL" ]; then echo "status=skipped: SUPABASE_DB_URL secret not set" >> "$GITHUB_OUTPUT"; exit 0; fi
+          command -v psql >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null)
+          log=$(mktemp)
+          fail() { echo "status=failed $1: $(tail -c 400 "$log" | tr '\n' ' ')" >> "$GITHUB_OUTPUT"; exit 1; }
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -q >>"$log" 2>&1 <<'SQL' || fail "connecting"
+          create table if not exists public._migrations (name text primary key, applied_at timestamptz not null default now());
+          alter table public._migrations enable row level security;
+          SQL
+          applied=""
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            n=$(basename "$f")
+            if [ "$(psql "$DB_URL" -tA -v n="$n" <<< "select 1 from public._migrations where name = :'n';")" = "1" ]; then continue; fi
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -q -1 -f "$f" >>"$log" 2>&1 || fail "in $n"
+            psql "$DB_URL" -q -v n="$n" <<< "insert into public._migrations(name) values (:'n');" >>"$log" 2>&1
+            applied="$applied $n"
+          done
+          staff="sys admin email not set (SYSADMIN_EMAIL)"
+          if [ -n "$SYSADMIN_EMAIL" ]; then
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -q -v e="$SYSADMIN_EMAIL" >>"$log" 2>&1 <<'SQL' || fail "setting the sys admin"
+          insert into public.app_settings(key, value) values ('sysadmin_email', lower(trim(:'e')))
+            on conflict (key) do update set value = excluded.value;
+          insert into public.user_roles(user_id, role)
+            select id, 'sysadmin' from auth.users where lower(email) = lower(trim(:'e'))
+          on conflict (user_id) do update set role = 'sysadmin';
+          SQL
+            if [ "$(psql "$DB_URL" -tA -v e="$SYSADMIN_EMAIL" <<< "select count(*) from auth.users u join public.user_roles r on r.user_id = u.id and r.role = 'sysadmin' where lower(u.email) = lower(trim(:'e'));")" = "1" ]; then
+              staff="sys admin account active"
+            else staff="sys admin email saved; becomes sys admin as soon as that account signs up"; fi
+          fi
+          demo="demo accounts off (DEMO_PASSWORD not set)"
+          if [ -n "$DEMO_PASSWORD" ]; then
+            psql "$DB_URL" -q -v pw="$DEMO_PASSWORD" -f supabase/seed/demo_users.sql >>"$log" 2>&1 || fail "creating demo accounts"
+            demo="demo accounts ready: $(psql "$DB_URL" -tAc "select string_agg(email, ', ' order by email) from auth.users where email like '%@coachmohsen.dev'")"
+          fi
+          roles=$(psql "$DB_URL" -tAc "select coalesce(string_agg(role||' '||n, ', '),'none') from (select role, count(*) n from public.user_roles group by 1 order by 1) t")
+          counts=$(psql "$DB_URL" -tAc "select coalesce(string_agg(collection||' '||n, ', ' order by collection),'none yet') from (select collection, count(*) n from public.docs group by 1) t")
+          echo "status=ok · migrations applied:${applied:- none new} · $staff · $demo · roles: $roles · records: $counts" >> "$GITHUB_OUTPUT"
+
+  site:
+    needs: database
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    outputs:
+      status: ${{ steps.done.outputs.status }}
+      url: ${{ steps.addr.outputs.url }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: check
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: if [ -n "$T" ] && [ -n "$A" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; fi
+      - name: Create the Pages project (first run only)
+        if: steps.check.outputs.go == '1'
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $T" "https://api.cloudflare.com/client/v4/accounts/$A/pages/projects/$PAGES_PROJECT")
+          if [ "$code" = "404" ]; then
+            curl -sf -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
+              "https://api.cloudflare.com/client/v4/accounts/$A/pages/projects" \
+              -d "{\"name\":\"$PAGES_PROJECT\",\"production_branch\":\"main\"}" > /dev/null
+          fi
+      - name: Deploy
+        if: steps.check.outputs.go == '1'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy public --project-name=coachmohsen --branch=main --commit-dirty=true
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - id: addr
+        if: steps.check.outputs.go == '1'
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          sub=$(curl -s -H "Authorization: Bearer $T" "https://api.cloudflare.com/client/v4/accounts/$A/pages/projects/$PAGES_PROJECT" | python3 -c "import sys,json;print(json.load(sys.stdin)['result']['subdomain'])")
+          echo "url=https://$sub" >> "$GITHUB_OUTPUT"
+      - id: done
+        if: always()
+        env:
+          GO: ${{ steps.check.outputs.go }}
+          URL: ${{ steps.addr.outputs.url }}
+        run: |
+          if [ "$GO" != "1" ]; then echo "status=skipped: Cloudflare secrets not set" >> "$GITHUB_OUTPUT"
+          elif [ -n "$URL" ]; then echo "status=ok · live at $URL" >> "$GITHUB_OUTPUT"
+          else echo "status=failed: see the Deploy step in the Actions tab" >> "$GITHUB_OUTPUT"; fi
+
+  auth:
+    needs: site
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.run.outputs.status }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: run
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SITE: ${{ needs.site.outputs.url }}
+          GOOGLE_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          APPLE_ID: ${{ secrets.APPLE_SERVICES_ID }}
+          APPLE_SECRET: ${{ secrets.APPLE_SECRET }}
+        run: |
+          ref=$(grep -oE 'https://[a-z0-9]+\.supabase\.co' public/config.js | head -1 | sed -E 's#https://([a-z0-9]+)\.supabase\.co#\1#')
+          if [ -z "$TOKEN" ]; then echo "status=skipped: SUPABASE_ACCESS_TOKEN secret not set" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ -z "$ref" ]; then echo "status=skipped: Supabase URL not yet in public/config.js" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ -z "$SITE" ]; then echo "status=skipped: site address unknown (site step did not finish)" >> "$GITHUB_OUTPUT"; exit 0; fi
+          body=$(python3 - <<'PY'
+          import json, os
+          e = os.environ; s = e['SITE']
+          b = {'site_url': s, 'uri_allow_list': s + ',' + s + '/**'}
+          if e.get('GOOGLE_ID') and e.get('GOOGLE_SECRET'):
+              b.update(external_google_enabled=True, external_google_client_id=e['GOOGLE_ID'], external_google_secret=e['GOOGLE_SECRET'])
+          if e.get('APPLE_ID') and e.get('APPLE_SECRET'):
+              b.update(external_apple_enabled=True, external_apple_client_id=e['APPLE_ID'], external_apple_secret=e['APPLE_SECRET'])
+          print(json.dumps(b))
+          PY
+          )
+          extra=""; [ -n "$GOOGLE_ID" ] && [ -n "$GOOGLE_SECRET" ] && extra="$extra · Google sign-in on"; [ -n "$APPLE_ID" ] && [ -n "$APPLE_SECRET" ] && extra="$extra · Apple sign-in on"
+          code=$(curl -s -o /tmp/r.json -w '%{http_code}' -X PATCH -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            "https://api.supabase.com/v1/projects/$ref/config/auth" -d "$body")
+          if [ "$code" = "200" ]; then echo "status=ok · sign-in links return to $SITE$extra" >> "$GITHUB_OUTPUT"
+          else echo "status=failed: Supabase answered HTTP $code" >> "$GITHUB_OUTPUT"; exit 1; fi
+
+  report:
+    needs: [database, site, auth]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - env:
+          DB: ${{ needs.database.outputs.status }}
+          SITE: ${{ needs.site.outputs.status }}
+          AUTH: ${{ needs.auth.outputs.status }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir s && cd s && git init -q && git checkout -q -b ci-status
+          printf '# Last deploy\n\n- commit: %s\n- run: %s\n- time (UTC): %s\n\n| step | result |\n| --- | --- |\n| database | %s |\n| site | %s |\n| auth | %s |\n' \
+            "$SHA" "$RUN" "$(date -u +%FT%TZ)" "${DB:-did not run}" "${SITE:-did not run}" "${AUTH:-did not run}" > STATUS.md
+          git config user.name "deploy-bot" && git config user.email "deploy-bot@users.noreply.github.com"
+          git add STATUS.md && git commit -qm "deploy status $SHA"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${REPO}.git" ci-status
