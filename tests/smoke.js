@@ -143,6 +143,11 @@ const shared = () => {
     if ((await pg.innerText('#brandTag')).toLowerCase() !== 'be the best version of yourself') throw new Error('tagline');
     if (await pg.evaluate(() => window.__STUB__.settings.find(x => x.key === 'theme').value) !== 'mohsen') throw new Error('not saved');
     await pg.click('#langBtn'); await pg.waitForTimeout(200); if (await pg.innerText('#brandTag') !== 'كن أفضل نسخة من نفسك') throw new Error('arabic tagline'); });
+  await run('admin-coach-this-player', asOwner(), async pg => {
+    await pg.waitForSelector('[data-act="coachThis"]'); if (await pg.locator('[data-act="addSlot"]').count()) throw new Error('slots shown before coaching');
+    await pg.click('[data-act="coachThis"]'); await pg.waitForSelector('[data-act="addSlot"]', { timeout: 5000 });
+    const st = await pg.evaluate(id => ({ m: window.__STUB__.members.some(m => m.user_id === id && m.role === 'coach'), e: window.__STUB__.enroll.some(e => e.player_id === 't1' && e.coach_id === id) }), OWNER.id);
+    if (!st.m || !st.e) throw new Error('not made coach ' + JSON.stringify(st)); }, '#trainee-t1');
   await run('link-by-email', asOwner(), async pg => {
     await pg.fill('#link-id-t1', 'Player@Example.com '); await pg.click('[data-act="linkId"][data-id="t1"]'); await pg.waitForTimeout(500);
     if (!(await pg.locator('[data-act="unlink"]').count())) throw new Error('not linked'); }, '#trainee-t1');
