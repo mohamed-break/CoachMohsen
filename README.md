@@ -1,7 +1,7 @@
 # CoachMohsen
 
 CoachMohsen: the padel coaching app for **Padel Pro**, self-hosted on Supabase + Cloudflare Pages
-at https://coachmohsen.pages.dev. It started as a copy of Padel 360 (November 2026) and is now
+at https://coachmohsen.net (the Cloudflare address coachmohsen.pages.dev forwards there). It started as a copy of Padel 360 (November 2026) and is now
 developed on its own; Padel 360 is not affected by changes here.
 
 ## How it is organised

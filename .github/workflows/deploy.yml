@@ -143,6 +143,8 @@ jobs:
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SITE: ${{ needs.site.outputs.url }}
+          # The app's own domain. Sign-in links use it; the Cloudflare address keeps working and forwards to it.
+          PRIMARY: https://coachmohsen.net
           GOOGLE_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           APPLE_ID: ${{ secrets.APPLE_SERVICES_ID }}
@@ -154,8 +156,12 @@ jobs:
           if [ -z "$SITE" ]; then echo "status=skipped: site address unknown (site step did not finish)" >> "$GITHUB_OUTPUT"; exit 0; fi
           body=$(python3 - <<'PY'
           import json, os
-          e = os.environ; s = e['SITE']
-          b = {'site_url': s, 'uri_allow_list': s + ',' + s + '/**'}
+          e = os.environ; s = e.get('PRIMARY') or e['SITE']
+          allow = []
+          for u in [s, s.replace('https://', 'https://www.'), e['SITE'], 'https://coachmohsen.pages.dev']:
+              for v in (u, u + '/**'):
+                  if v not in allow: allow.append(v)
+          b = {'site_url': s, 'uri_allow_list': ','.join(allow)}
           if e.get('GOOGLE_ID') and e.get('GOOGLE_SECRET'):
               b.update(external_google_enabled=True, external_google_client_id=e['GOOGLE_ID'], external_google_secret=e['GOOGLE_SECRET'])
           if e.get('APPLE_ID') and e.get('APPLE_SECRET'):
@@ -166,7 +172,8 @@ jobs:
           extra=""; [ -n "$GOOGLE_ID" ] && [ -n "$GOOGLE_SECRET" ] && extra="$extra · Google sign-in on"; [ -n "$APPLE_ID" ] && [ -n "$APPLE_SECRET" ] && extra="$extra · Apple sign-in on"
           code=$(curl -s -o /tmp/r.json -w '%{http_code}' -X PATCH -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
             "https://api.supabase.com/v1/projects/$ref/config/auth" -d "$body")
-          if [ "$code" = "200" ]; then echo "status=ok · sign-in links return to $SITE$extra" >> "$GITHUB_OUTPUT"
+          dom=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$PRIMARY/" || true)
+          if [ "$code" = "200" ]; then echo "status=ok · sign-in links return to ${PRIMARY:-$SITE} (site answers HTTP $dom)$extra" >> "$GITHUB_OUTPUT"
           else echo "status=failed: Supabase answered HTTP $code" >> "$GITHUB_OUTPUT"; exit 1; fi
 
   report:
