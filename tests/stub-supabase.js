@@ -131,6 +131,11 @@
       if(!T.players.some(x=>x.org_id===c.org&&x.player_id===tr.id)) T.players.push({org_id:c.org,player_id:tr.id});
       if(c.coach&&!T.enroll.some(e=>e.org_id===c.org&&e.player_id===tr.id&&e.coach_id===c.coach)) T.enroll.push({org_id:c.org,player_id:tr.id,coach_id:c.coach});
       return ok({playerId:tr.id,newPlayer:fresh,club:(T.orgs.find(o=>o.id===c.org)||{}).name,coach:c.coach?name(c.coach):null}); },
+    linked_players: () => ok(sys() ? rows.filter(r=>r.collection==='trainees'&&r.data.linkedUserId).map(r=>({user_id:r.data.linkedUserId, player_id:r.id, player_name:r.data.name})) : []),
+    register_user_as_player: a => { if(!sys()) return fail('only a sys admin can register players here');
+      let tr=rows.find(r=>r.collection==='trainees'&&r.data.linkedUserId===a.p_user);
+      if(!tr){ const id='p'+hex(); const pr=T.profiles.find(x=>x.id===a.p_user)||{}; tr={collection:'trainees',id,data:{id,name:pr.display_name||pr.full_name||name(a.p_user),linkedUserId:a.p_user}}; rows.push(tr); }
+      if(!T.players.some(x=>x.org_id===a.p_org&&x.player_id===tr.id)) T.players.push({org_id:a.p_org,player_id:tr.id}); return ok(tr.id); },
     set_theme: a => { if(!sys()) return fail('only a sys admin can change the theme'); const st=(T.settings||(T.settings=[{key:'theme',value:'protour'}])).find(x=>x.key==='theme'); st.value=a.p_theme; return ok(null); },
     find_user_by_email: a => { const u=T.users.find(x=>(x.email||'').toLowerCase()===String(a.p_email).trim().toLowerCase()); return ok(u?u.id:null); },
     delete_user: a => { T.users=T.users.filter(x=>x.id!==a.p_user); rows.forEach(r=>{if(r.collection==='trainees'&&r.data.linkedUserId===a.p_user)r.data.linkedUserId=''}); return ok(1); },

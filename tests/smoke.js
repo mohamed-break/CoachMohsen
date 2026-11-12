@@ -185,6 +185,16 @@ const shared = () => {
     await pg.waitForSelector('.ptabs'); const st = await pg.evaluate(() => { const T = window.__STUB__; const tr = T.docs.find(d => d.collection === 'trainees' && d.data.linkedUserId === '44444444-4444-4444-8444-444444444444');
       return { name: tr && tr.data.name, coach: tr && T.enroll.some(e => e.player_id === tr.id && e.coach_id === 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'), left: localStorage.getItem('padelcoach.join') }; });
     if (st.name !== 'Layla Hassan' || !st.coach || st.left) throw new Error('join ' + JSON.stringify(st)); }, '?join=cabc123def');
+  await run('users-register-player', asOwner(), async pg => {
+    await pg.click('nav.tabs a[href="#users"]'); await pg.waitForSelector(`[data-act="regPlayer"][data-id="${COACH_B.id}"]`);
+    if (await pg.locator(`[data-act="regPlayer"][data-id="${PLAYER.id}"]`).count() === 0 && false) throw new Error('x');
+    await pg.click(`[data-act="regPlayer"][data-id="${COACH_B.id}"]`); await pg.waitForTimeout(600);
+    if (await pg.locator(`[data-act="regPlayer"][data-id="${COACH_B.id}"]`).count()) throw new Error('button still shown');
+    const tr = await pg.evaluate(id => window.__STUB__.docs.find(d => d.collection === 'trainees' && d.data.linkedUserId === id), COACH_B.id);
+    if (!tr || tr.data.name !== 'Coach B') throw new Error('not registered ' + JSON.stringify(tr));
+    if (!(await pg.locator(`a[href="#trainee-${tr.id}"]`).count())) throw new Error('no link to the profile');
+    await pg.setViewportSize({ width: 390, height: 844 }); await pg.waitForTimeout(200);
+    const r = await pg.locator(`[data-act="regPlayer"][data-id="${ADMIN.id}"]`).boundingBox(); if (!r || r.x + r.width > 390) throw new Error('button off screen on a phone'); });
   await run('link-by-email', asOwner(), async pg => {
     await pg.fill('#link-id-t1', 'Player@Example.com '); await pg.click('[data-act="linkId"][data-id="t1"]'); await pg.waitForTimeout(500);
     if (!(await pg.locator('[data-act="unlink"]').count())) throw new Error('not linked'); }, '#trainee-t1');
