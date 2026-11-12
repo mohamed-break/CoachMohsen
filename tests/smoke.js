@@ -47,7 +47,7 @@ const shared = () => {
   await new Promise(r => srv.listen(8765, r)); const b = await chromium.launch(); const errs = []; let ok = true;
   const run = async (name, stub, fn, hash = '') => { const pg = await b.newPage({ viewport: { width: 1280, height: 900 } });
     pg.on('pageerror', e => errs.push(name + ': ' + e.message)); pg.on('console', m => { if (m.type() === 'error' && !/fonts\.g/.test(m.text()) && !/ERR_(NAME|INTERNET|CONNECTION|TUNNEL|PROXY)/.test(m.text())) errs.push(name + ' console: ' + m.text()); });
-    let navs = 0; pg.on('framenavigated', f => { if (f === pg.mainFrame()) navs++; });
+    let navs = 0; pg.on('domcontentloaded', () => { navs++; }); // full page loads only (address tidy-ups are not reloads)
     await pg.addInitScript(st => { window.__STUB__ = st; }, stub); await pg.goto('http://localhost:8765/' + hash); await pg.waitForTimeout(1200);
     if (navs > 1) { ok = false; console.log('FAIL', name, 'page reloaded itself', navs - 1, 'time(s)'); }
     try { await fn(pg); console.log('PASS', name); } catch (e) { ok = false; console.log('FAIL', name, e.message); }
@@ -170,6 +170,21 @@ const shared = () => {
     const tx = await text(pg); if (!tx.includes('fresh@example.com') || !tx.includes('Open profile')) throw new Error('no confirmation / not listed');
     await pg.click('[data-act="quickPlayer"]'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(200);
     if (!(await text(pg)).includes('Add a name first.')) throw new Error('saved without a name'); });
+  await run('invite-link-coach', asCoachA(), async pg => {
+    await pg.click('[data-act="inviteLink"]'); await pg.waitForSelector('#inv-url'); const u = await pg.inputValue('#inv-url');
+    if (!/\/\?join=c[0-9a-f]{9}$/.test(u)) throw new Error('link ' + u);
+    const c = await pg.evaluate(() => window.__STUB__.codes[0]); if (c.coach !== 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') throw new Error('not a coach link');
+    await pg.click('[data-invrenew]'); await pg.click('[data-invrenew]'); await pg.waitForTimeout(400);
+    if ((await pg.inputValue('#inv-url')) === u) throw new Error('not renewed'); }, '#trainees');
+  const JOIN = { codes: [{ code: 'cabc123def', org: 'freelance', coach: COACH_A.id }] };
+  await run('invite-signed-out', { ...asCoachA(), ...JOIN, user: null }, async pg => {
+    await pg.waitForSelector('#authForm'); const tx = await text(pg);
+    if (!tx.includes('Coach A invited you to train at Freelance coaches')) throw new Error('no invite banner');
+    if (await pg.evaluate(() => location.search)) throw new Error('code left in the address'); }, '?join=CABC123DEF');
+  await run('invite-joins-new-player', { ...asCoachA(), ...JOIN, user: { id: '44444444-4444-4444-8444-444444444444', email: 'layla@example.com', user_metadata: { full_name: 'Layla Hassan' } } }, async pg => {
+    await pg.waitForSelector('.ptabs'); const st = await pg.evaluate(() => { const T = window.__STUB__; const tr = T.docs.find(d => d.collection === 'trainees' && d.data.linkedUserId === '44444444-4444-4444-8444-444444444444');
+      return { name: tr && tr.data.name, coach: tr && T.enroll.some(e => e.player_id === tr.id && e.coach_id === 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'), left: localStorage.getItem('padelcoach.join') }; });
+    if (st.name !== 'Layla Hassan' || !st.coach || st.left) throw new Error('join ' + JSON.stringify(st)); }, '?join=cabc123def');
   await run('link-by-email', asOwner(), async pg => {
     await pg.fill('#link-id-t1', 'Player@Example.com '); await pg.click('[data-act="linkId"][data-id="t1"]'); await pg.waitForTimeout(500);
     if (!(await pg.locator('[data-act="unlink"]').count())) throw new Error('not linked'); }, '#trainee-t1');

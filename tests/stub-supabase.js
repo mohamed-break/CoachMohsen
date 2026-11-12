@@ -121,6 +121,16 @@
       if(!T.players.some(c=>c.org_id===a.p_org&&c.player_id===tr.id)) T.players.push({org_id:a.p_org, player_id:tr.id});
       (a.p_coaches||[]).forEach(c=>{ if(!T.enroll.some(e=>e.org_id===a.p_org&&e.player_id===tr.id&&e.coach_id===c)) T.enroll.push({org_id:a.p_org, player_id:tr.id, coach_id:c}); });
       return ok({playerId:tr.id, userId:u?u.id:null, newAccount:fresh}); },
+    my_join_code: a => { if(!(isCoach(a.p_org)||isAdmin(a.p_org))) return fail('only coaches and club admins have invite links'); T.codes=T.codes||[];
+      const coach=isCoach(a.p_org)?uid():null; let c=T.codes.find(x=>x.org===a.p_org&&x.coach===coach); if(c&&a.p_renew){T.codes=T.codes.filter(x=>x!==c);c=null}
+      if(!c){c={code:'c'+hex().slice(0,9),org:a.p_org,coach};T.codes.push(c)} return ok(c.code); },
+    join_info: a => { const c=(T.codes||[]).find(x=>x.code===String(a.p_code).toLowerCase()); if(!c) return ok(null); return ok({club:(T.orgs.find(o=>o.id===c.org)||{}).name, coach:c.coach?name(c.coach):null}); },
+    join_with_code: a => { const c=(T.codes||[]).find(x=>x.code===String(a.p_code).toLowerCase()); if(!c) return fail('JOIN_INVALID: this invite link is no longer valid');
+      let tr=rows.find(r=>r.collection==='trainees'&&r.data.linkedUserId===uid()), fresh=false;
+      if(!tr){ const id='p'+hex(); const pr=T.profiles.find(x=>x.id===uid())||{}; tr={collection:'trainees',id,data:{id,name:pr.full_name||(T.user.user_metadata||{}).full_name||String(T.user.email).split('@')[0],linkedUserId:uid()}}; rows.push(tr); fresh=true; }
+      if(!T.players.some(x=>x.org_id===c.org&&x.player_id===tr.id)) T.players.push({org_id:c.org,player_id:tr.id});
+      if(c.coach&&!T.enroll.some(e=>e.org_id===c.org&&e.player_id===tr.id&&e.coach_id===c.coach)) T.enroll.push({org_id:c.org,player_id:tr.id,coach_id:c.coach});
+      return ok({playerId:tr.id,newPlayer:fresh,club:(T.orgs.find(o=>o.id===c.org)||{}).name,coach:c.coach?name(c.coach):null}); },
     set_theme: a => { if(!sys()) return fail('only a sys admin can change the theme'); const st=(T.settings||(T.settings=[{key:'theme',value:'protour'}])).find(x=>x.key==='theme'); st.value=a.p_theme; return ok(null); },
     find_user_by_email: a => { const u=T.users.find(x=>(x.email||'').toLowerCase()===String(a.p_email).trim().toLowerCase()); return ok(u?u.id:null); },
     delete_user: a => { T.users=T.users.filter(x=>x.id!==a.p_user); rows.forEach(r=>{if(r.collection==='trainees'&&r.data.linkedUserId===a.p_user)r.data.linkedUserId=''}); return ok(1); },
