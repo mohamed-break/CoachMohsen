@@ -66,7 +66,8 @@
 .brand .logo-photo{display:none;flex:none;width:44px;height:44px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--navy),0 0 0 4px var(--orange);background:var(--navy)}
 :root[data-brand="mohsen"] .brand .logo-photo{display:block}
 :root[data-brand="mohsen"] .brand svg.logo{display:none}
-@media (max-width:520px){.brand .logo-photo{width:34px;height:34px}}
+@media (max-width:520px){.brand .logo-photo{width:34px;height:34px}:root[data-brand="mohsen"] .brand h1{font-size:17px}:root[data-brand="mohsen"] .brand .tag{font-size:8px;letter-spacing:.04em}}
+.brand>div{min-width:0;overflow:hidden}.brand .tag{text-overflow:ellipsis;overflow:hidden}
 /* Glass Court and Club Royale use sentence-case headings instead of Pro Tour's condensed capitals */
 :root[data-brand="glass"] :is(h2,.brand h1,.wk-title .no,.daylabel .d,.pc-title,.wk-h .dn,.wk-day .wh b),
 :root[data-brand="royale"] :is(h2,.brand h1,.wk-title .no,.daylabel .d,.pc-title,.wk-h .dn,.wk-day .wh b){text-transform:none;letter-spacing:-.01em}
@@ -99,6 +100,8 @@ header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px 0;f
 #viewSwitch button{border:0;background:transparent;color:#fff;opacity:.8;font:700 13px var(--body);padding:4px 12px;border-radius:999px;cursor:pointer}
 .clubsw{width:auto;max-width:200px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 12px;font:700 13px var(--body)}
 .clubsw option{color:#111}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-weight:400;font-size:12.5px;min-height:0}.sugg:empty{display:none}
+.chipbtn{border:1.5px dashed var(--court);background:var(--court-soft);color:var(--court);border-radius:999px;padding:2px 10px;font:600 12.5px var(--body);cursor:pointer}
 .hbreak{display:none}
 .userchip{display:flex;align-items:center;gap:8px;min-width:0;max-width:260px}
 .userchip{color:inherit;text-decoration:none;border-radius:999px;padding:2px 10px 2px 2px}.userchip:hover{background:rgba(255,255,255,.1)}
@@ -534,7 +537,7 @@ ar:{brand:"كوتش محسن",tagline:"درّب · تدرّب · تطوّر",sch
  inviteMsg:"أهلاً {name}! هذه صفحة تدريبك على كوتش محسن:\n{url}\n\n١. افتح الرابط وأنشئ حساباً ببريدك الإلكتروني.\n٢. انسخ رقم اللاعب الظاهر في الصفحة وأرسله لي هنا.\nبعد أن أربطه ستظهر لك حصصك وتقييماتك وملاحظات المدرب.",clubs:"الأندية",weekNo:"الأسبوع",allPlayers:"كل اللاعبين",allClubs:"كل الأندية",player:"اللاعب",clearFilters:"مسح الفلاتر",noMatchWeek:"لا توجد حصص تطابق هذه الفلاتر هذا الأسبوع.",playersWord:"لاعبين",sessionsShort:"الحصص",hoursShort:"ساعات في الملعب",playersShort:"اللاعبون",unbookedShort:"غير محجوز",now:"الآن",addClub:"إضافة نادٍ",editClub:"تعديل النادي",clubName:"اسم النادي",setDefault:"النادي الافتراضي للحصص الجديدة",defaultTag:"افتراضي",
  noClubs:"لا توجد أندية بعد",noClubsHint:"أضف الأندية التي تدرب فيها، لتظهر كخيارات عند جدولة الحصص."}
 };
-Object.assign(T.en,{coachThis:"Coach this player",slotsOwnHint:"The fixed weekly schedule belongs to each of the player's coaches. Become one of this player's coaches to set your own fixed days and times and book them in one go.",court:"Court",courts:"Courts",addCourt:"Add court",courtName:"Court name",needCourt:"Choose a court.",needTime:"A session on a court needs a start time.",courtBusy:"That court is already booked at this time",courtBusyHint:"Pick another court or time.",busyAt:"booked",noCourts:"No courts yet",courtsHint:"Courts at this venue. Every session is booked on one court, and a court holds one session at a time.",skippedBusy:"skipped (court booked)",myAccount:"My account",photo:"Photo",uploadPhoto:"Upload photo",changePhoto:"Change photo",removePhoto:"Remove photo",photoHint:"JPG, PNG or WebP. It is resized to fit and stays under 2 MB.",photoSaved:"Photo updated",photoRemoved:"Photo removed",photoErr:"Could not use this picture. Try a JPG or PNG.",
+Object.assign(T.en,{suggested:"Suggested",coachThis:"Coach this player",slotsOwnHint:"The fixed weekly schedule belongs to each of the player's coaches. Become one of this player's coaches to set your own fixed days and times and book them in one go.",court:"Court",courts:"Courts",addCourt:"Add court",courtName:"Court name",needCourt:"Choose a court.",needTime:"A session on a court needs a start time.",courtBusy:"That court is already booked at this time",courtBusyHint:"Pick another court or time.",busyAt:"booked",noCourts:"No courts yet",courtsHint:"Courts at this venue. Every session is booked on one court, and a court holds one session at a time.",skippedBusy:"skipped (court booked)",myAccount:"My account",photo:"Photo",uploadPhoto:"Upload photo",changePhoto:"Change photo",removePhoto:"Remove photo",photoHint:"JPG, PNG or WebP. It is resized to fit and stays under 2 MB.",photoSaved:"Photo updated",photoRemoved:"Photo removed",photoErr:"Could not use this picture. Try a JPG or PNG.",
  profileDetails:"Profile",fullName:"Full name",displayName:"Display name",displayNameHint:"Shown in the app instead of your full name, e.g. “Coach Mohsen”. Leave empty to use your full name.",
  currentEmail:"Current email",newEmail:"New email",changeEmail:"Change email",emailSame:"That is already your email.",emailSent:"Check both inboxes: confirm the change from the link we sent. Until then you keep signing in with your current email.",emailPending:"Waiting for confirmation of",
  googleEmailNote:"You sign in with Google. Changing the email here does not change your Google account, and Google sign-in keeps working. To sign in with the new email as well, set a password below.",
@@ -548,7 +551,7 @@ Object.assign(T.en,{coachThis:"Coach this player",slotsOwnHint:"The fixed weekly
  removePlayer:"Remove from my players",removePlayerAdmin:"Remove from club",withCoach:"with",
  usersHint:"Every new account is a Player. Coaches and club admins are added inside a club (Clubs or Team). Make someone a Sys admin to let them manage clubs, users and the theme. You cannot change your own role.",
  memberships:"Clubs",noClubAccess:"You are not part of any club yet",noClubAccessHint:"Ask a sys admin to add you to a club."});
-Object.assign(T.ar,{coachThis:"درّب هذا اللاعب",slotsOwnHint:"الجدول الأسبوعي الثابت خاص بكل مدرب من مدربي اللاعب. انضم كأحد مدربي هذا اللاعب لتحدد أيامك وأوقاتك الثابتة وتحجزها دفعة واحدة.",court:"الملعب",courts:"الملاعب",addCourt:"إضافة ملعب",courtName:"اسم الملعب",needCourt:"اختر الملعب.",needTime:"الحصة على ملعب تحتاج وقت بداية.",courtBusy:"هذا الملعب محجوز في هذا الوقت",courtBusyHint:"اختر ملعباً أو وقتاً آخر.",busyAt:"محجوز",noCourts:"لا توجد ملاعب بعد",courtsHint:"ملاعب هذا المكان. كل حصة تُحجز على ملعب واحد، والملعب يستوعب حصة واحدة في نفس الوقت.",skippedBusy:"تم تخطيها (الملعب محجوز)",myAccount:"حسابي",photo:"الصورة",uploadPhoto:"رفع صورة",changePhoto:"تغيير الصورة",removePhoto:"إزالة الصورة",photoHint:"JPG أو PNG أو WebP. يتم تصغيرها تلقائياً لتبقى أقل من 2 ميجابايت.",photoSaved:"تم تحديث الصورة",photoRemoved:"تمت إزالة الصورة",photoErr:"تعذر استخدام هذه الصورة. جرّب JPG أو PNG.",
+Object.assign(T.ar,{suggested:"مقترح",coachThis:"درّب هذا اللاعب",slotsOwnHint:"الجدول الأسبوعي الثابت خاص بكل مدرب من مدربي اللاعب. انضم كأحد مدربي هذا اللاعب لتحدد أيامك وأوقاتك الثابتة وتحجزها دفعة واحدة.",court:"الملعب",courts:"الملاعب",addCourt:"إضافة ملعب",courtName:"اسم الملعب",needCourt:"اختر الملعب.",needTime:"الحصة على ملعب تحتاج وقت بداية.",courtBusy:"هذا الملعب محجوز في هذا الوقت",courtBusyHint:"اختر ملعباً أو وقتاً آخر.",busyAt:"محجوز",noCourts:"لا توجد ملاعب بعد",courtsHint:"ملاعب هذا المكان. كل حصة تُحجز على ملعب واحد، والملعب يستوعب حصة واحدة في نفس الوقت.",skippedBusy:"تم تخطيها (الملعب محجوز)",myAccount:"حسابي",photo:"الصورة",uploadPhoto:"رفع صورة",changePhoto:"تغيير الصورة",removePhoto:"إزالة الصورة",photoHint:"JPG أو PNG أو WebP. يتم تصغيرها تلقائياً لتبقى أقل من 2 ميجابايت.",photoSaved:"تم تحديث الصورة",photoRemoved:"تمت إزالة الصورة",photoErr:"تعذر استخدام هذه الصورة. جرّب JPG أو PNG.",
  profileDetails:"الملف الشخصي",fullName:"الاسم الكامل",displayName:"الاسم المعروض",displayNameHint:"يظهر في التطبيق بدلاً من اسمك الكامل، مثل “كوتش محسن”. اتركه فارغاً لاستخدام اسمك الكامل.",
  currentEmail:"البريد الحالي",newEmail:"البريد الجديد",changeEmail:"تغيير البريد",emailSame:"هذا هو بريدك الحالي.",emailSent:"تحقق من صندوقي البريد: أكّد التغيير من الرابط المرسل. حتى ذلك الحين تسجل الدخول ببريدك الحالي.",emailPending:"في انتظار تأكيد",
  googleEmailNote:"أنت تسجل الدخول عبر Google. تغيير البريد هنا لا يغيّر حساب Google، ويظل الدخول عبر Google يعمل. لتسجيل الدخول بالبريد الجديد أيضاً، عيّن كلمة مرور بالأسفل.",
@@ -877,16 +880,72 @@ function traineeSheet(id){
   },{deleteLabel:S.isAdmin?t("removePlayerAdmin"):t("removePlayer"),onDelete:id?async()=>{const ok=await guard(async()=>{await db.doc("trainees/"+id).delete();await loadLinks();recompute()});if(ok){toast(t("deleted"));location.hash="trainees"}return ok}:null});
 }
 
+// ---------- padel glossary: suggests the other language's skill name ----------
+// [English, Arabic, category]. Common padel terms plus the club's own skills (added at run time).
+const PADEL_TERMS=[
+ ["Forehand","الضربة الأمامية","strokes"],["Backhand","الضربة الخلفية","strokes"],["Two-handed backhand","الضربة الخلفية بيدين","strokes"],
+ ["Lob","اللوب","strokes"],["Defensive lob","اللوب الدفاعي","strokes"],["Attacking lob","اللوب الهجومي","strokes"],
+ ["Chiquita","التشيكيتا","strokes"],["Drop shot","الضربة الساقطة","strokes"],["Passing shot","الضربة العابرة","strokes"],
+ ["Cross-court shot","الضربة القطرية","strokes"],["Down the line","الضربة الموازية للخط","strokes"],["Topspin","الضربة الدوارة الأمامية","strokes"],["Slice","الضربة القاطعة","strokes"],
+ ["Groundstrokes","الضربات الأرضية","strokes"],["Half volley","نصف فولي","strokes"],
+ ["Volley","الفولي","net"],["Forehand volley","الفولي الأمامي","net"],["Backhand volley","الفولي الخلفي","net"],["Block volley","فولي الصد","net"],
+ ["Drop volley","الفولي الساقط","net"],["Net play","اللعب على الشبكة","net"],["Net approach","التقدم للشبكة","net"],["Net position","التمركز على الشبكة","net"],
+ ["Bandeja","البانديخا","overhead"],["Víbora","الفيبورا","overhead"],["Smash","السماش","overhead"],["Flat smash","السماش المستقيم","overhead"],
+ ["Smash x3","السماش بالخروج من ثلاثة","overhead"],["Smash x4","السماش بالخروج من أربعة","overhead"],["Kick smash","السماش الدوار","overhead"],
+ ["Rulo","الرولو","overhead"],["Gancho","الغانشو","overhead"],["Bajada","الباخادا","overhead"],["Overheads","الضربات العلوية","overhead"],
+ ["Back glass exit","الخروج من الزجاج الخلفي","walls"],["Back wall","الحائط الخلفي","walls"],["Side wall","الحائط الجانبي","walls"],["Side glass","الزجاج الجانبي","walls"],
+ ["Double wall","الحائط المزدوج","walls"],["Side glass / double wall","الزجاج الجانبي / الحائط المزدوج","walls"],["Contrapared","ضربة الحائط المعاكس","walls"],
+ ["Wall play","اللعب على الزجاج","walls"],["Back glass defence","الدفاع من الزجاج الخلفي","walls"],["Fence play","اللعب على السياج","walls"],
+ ["Serve","الإرسال","serve"],["Return of serve","استقبال الإرسال","serve"],["Second serve","الإرسال الثاني","serve"],["Serve and volley","الإرسال والتقدم للشبكة","serve"],
+ ["Footwork","حركة القدمين","tactics"],["Split step","الخطوة التحضيرية","tactics"],["Positioning","التمركز","tactics"],["Positioning & transitions","التمركز والانتقال","tactics"],
+ ["Transitions","الانتقال","tactics"],["Partner communication","التواصل مع الشريك","tactics"],["Defence","الدفاع","tactics"],["Attack","الهجوم","tactics"],
+ ["Court coverage","تغطية الملعب","tactics"],["Shot selection","اختيار الضربة","tactics"],["Match tactics","تكتيك المباراة","tactics"],["Game strategy","استراتيجية اللعب","tactics"],
+ ["Reaction speed","سرعة رد الفعل","tactics"],["Fitness","اللياقة البدنية","other"],["Warm-up","الإحماء","other"],["Agility","الرشاقة","other"],["Endurance","التحمل","other"],
+ ["Mental game","الجانب الذهني","other"],["Concentration","التركيز","other"],["Grip","مسكة المضرب","strokes"],["Ready position","وضعية الاستعداد","tactics"]];
+// Words, for names that are not in the list as a whole.
+const PADEL_WORDS=[["forehand","أمامية"],["backhand","خلفية"],["volley","فولي"],["smash","سماش"],["lob","لوب"],["serve","إرسال"],["return","استقبال"],
+ ["wall","حائط"],["glass","زجاج"],["back","خلفي"],["side","جانبي"],["defence","دفاع"],["defense","دفاع"],["attack","هجوم"],["net","شبكة"],["drill","تمرين"],
+ ["footwork","حركة القدمين"],["positioning","تمركز"],["cross-court","قطري"],["exit","خروج"],["speed","سرعة"],["control","تحكم"],["power","قوة"],["depth","عمق"],
+ ["placement","توجيه"],["consistency","ثبات"],["shot","ضربة"],["bandeja","بانديخا"],["vibora","فيبورا"],["chiquita","تشيكيتا"],["rally","تبادل"],["game","لعب"]];
+const normEn=x=>String(x||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+const normAr=x=>String(x||"").replace(/[ً-ْـ]/g,"").replace(/[إأآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[^ء-ي0-9 ]+/g," ")
+  .split(/\s+/).filter(Boolean).map(w=>w.replace(/^(وال|بال|فال|كال|لل|ال)(?=\S{2,})/,"")).join(" ").trim();
+function glossary(){const seen=new Set(),out=[];
+  const add=(en,ar,cat)=>{if(!en||!ar)return;const k=normEn(en)+"|"+normAr(ar);if(seen.has(k))return;seen.add(k);out.push({en,ar,cat})};
+  Object.values(S.skills||{}).forEach(x=>add(x.name_en,x.name_ar,x.category));PADEL_TERMS.forEach(([en,ar,cat])=>add(en,ar,cat));return out}
+// Best matches for a name typed in one language: whole terms first (exact, then starts-with / contains), then word by word.
+function suggestOther(text,from){const q=from==="ar"?normAr(text):normEn(text);if(q.length<2)return[];
+  const key=e=>from==="ar"?normAr(e.ar):normEn(e.en);const scored=[];
+  glossary().forEach(e=>{const k=key(e);let sc=0;
+    if(k===q)sc=100;else if(k.startsWith(q)||q.startsWith(k))sc=70-Math.abs(k.length-q.length)/10;else if(k.includes(q)||q.includes(k))sc=50-Math.abs(k.length-q.length)/10;
+    else{const qw=q.split(" "),kw=k.split(" ");const hit=qw.filter(w=>kw.includes(w)).length;if(hit)sc=20*hit/Math.max(qw.length,kw.length)}
+    if(sc>0)scored.push({...e,sc})});
+  scored.sort((a,b)=>b.sc-a.sc);const out=scored.slice(0,4).map(e=>({text:from==="ar"?e.en:e.ar,cat:e.cat,exact:e.sc===100}));
+  if(!out.some(o=>o.exact)){const words=q.split(" ");const tr=words.map(w=>{const hit=PADEL_WORDS.find(([en,ar])=>from==="ar"?normAr(ar)===w:normEn(en)===w);return hit?(from==="ar"?hit[0]:hit[1]):null});
+    if(tr.every(Boolean)&&words.length>1){const txt=from==="ar"?tr.map(w=>w[0].toUpperCase()+w.slice(1)).join(" "):tr.join(" ");if(!out.some(o=>o.text===txt))out.push({text:txt,cat:"",exact:false})}}
+  return out}
 function skillSheet(id){
   const s=id?S.skills[id]:{};
-  const body=`<div class="fgrid"><label class="f">${t("nameEn")}<input type="text" id="sk-en" name="name_en" dir="ltr" value="${esc(s.name_en||"")}"></label>
-  <label class="f">${t("nameAr")}<input type="text" id="sk-ar" name="name_ar" dir="rtl" value="${esc(s.name_ar||"")}"></label>
+  const body=`<div class="fgrid"><label class="f">${t("nameEn")}<input type="text" id="sk-en" name="name_en" dir="ltr" autocomplete="off" value="${esc(s.name_en||"")}"><span class="sugg" id="sug-en" aria-live="polite"></span></label>
+  <label class="f">${t("nameAr")}<input type="text" id="sk-ar" name="name_ar" dir="rtl" autocomplete="off" value="${esc(s.name_ar||"")}"><span class="sugg" id="sug-ar" aria-live="polite"></span></label>
   <label class="f">${t("category")}<select id="sk-cat" name="category">${CATS.map(c=>`<option value="${c}" ${(s.category||"strokes")===c?"selected":""}>${t("cat_"+c)}</option>`).join("")}</select></label></div>`;
   openSheet(id?t("edit"):t("addSkill"),body,async f=>{
     if(!val(f,"name_en")&&!val(f,"name_ar"))return t("required");
     const nid=id||uid();const doc={id:nid,name_en:val(f,"name_en"),name_ar:val(f,"name_ar"),category:val(f,"category")};
     if(!await guard(()=>db.doc("skills/"+nid).set(doc)))return false;toast(t("saved"));
-  },{onDelete:id?async()=>{const ok=await guard(()=>db.doc("skills/"+id).delete());if(ok)toast(t("deleted"));return ok}:null});
+  },{onDelete:id?async()=>{const ok=await guard(()=>db.doc("skills/"+id).delete());if(ok)toast(t("deleted"));return ok}:null,
+   init:f=>{const en=f.querySelector("#sk-en"),ar=f.querySelector("#sk-ar"),cat=f.querySelector("#sk-cat");
+    // what the app filled in itself may be replaced while typing; anything typed by hand is kept
+    const auto={en:false,ar:false};let catAuto=!id;
+    const show=(from)=>{const src=from==="ar"?ar:en,dst=from==="ar"?en:ar,box=f.querySelector(from==="ar"?"#sug-en":"#sug-ar");const other=from==="ar"?"en":"ar";
+      const list=src.value.trim()?suggestOther(src.value,from):[];
+      if(list[0]&&list[0].exact&&(!dst.value.trim()||auto[other])){dst.value=list[0].text;auto[other]=true;if(catAuto&&list[0].cat)cat.value=list[0].cat}
+      else if(!src.value.trim()&&auto[other]){dst.value="";auto[other]=false}
+      const rest=list.filter(o=>o.text!==dst.value);
+      box.innerHTML=rest.length?`<span class="muted">${t("suggested")}:</span> `+rest.map(o=>`<button type="button" class="chipbtn" data-sug="${esc(o.text)}" data-cat="${esc(o.cat||"")}" dir="${other==="ar"?"rtl":"ltr"}">${esc(o.text)}</button>`).join(""):"";
+      box.querySelectorAll("[data-sug]").forEach(b=>b.addEventListener("click",()=>{dst.value=b.dataset.sug;auto[other]=false;if(catAuto&&b.dataset.cat)cat.value=b.dataset.cat;box.innerHTML="";dst.focus()}))};
+    en.addEventListener("input",()=>{auto.en=false;show("en")});ar.addEventListener("input",()=>{auto.ar=false;show("ar")});
+    cat.addEventListener("change",()=>{catAuto=false})}});
 }
 
 function sessionSheet(id,preDate){

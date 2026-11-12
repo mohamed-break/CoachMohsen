@@ -148,6 +148,18 @@ const shared = () => {
     await pg.click('[data-act="coachThis"]'); await pg.waitForSelector('[data-act="addSlot"]', { timeout: 5000 });
     const st = await pg.evaluate(id => ({ m: window.__STUB__.members.some(m => m.user_id === id && m.role === 'coach'), e: window.__STUB__.enroll.some(e => e.player_id === 't1' && e.coach_id === id) }), OWNER.id);
     if (!st.m || !st.e) throw new Error('not made coach ' + JSON.stringify(st)); }, '#trainee-t1');
+  await run('skill-name-suggest', asCoachA(), async pg => {
+    await pg.click('nav.tabs a[href="#skills"]'); await pg.waitForTimeout(300); await pg.click('[data-act="newSkill"]'); await pg.waitForSelector('#sk-ar');
+    await pg.fill('#sk-ar', 'الفولي الخلفي'); await pg.waitForTimeout(100);
+    if (await pg.inputValue('#sk-en') !== 'Backhand volley') throw new Error('en from ar: ' + await pg.inputValue('#sk-en'));
+    if (await pg.inputValue('#sk-cat') !== 'net') throw new Error('category not suggested');
+    await pg.fill('#sk-ar', ''); await pg.fill('#sk-en', ''); await pg.fill('#sk-en', 'víbora'); await pg.waitForTimeout(100);
+    if (await pg.inputValue('#sk-ar') !== 'الفيبورا') throw new Error('ar from en: ' + await pg.inputValue('#sk-ar'));
+    await pg.fill('#sk-en', 'Smash'); await pg.waitForTimeout(100); if (await pg.inputValue('#sk-ar') !== 'السماش') throw new Error('auto value not updated');
+    await pg.fill('#sk-ar', 'سماش قوي يدوي'); await pg.fill('#sk-en', 'Smas'); await pg.waitForTimeout(100);
+    if (await pg.inputValue('#sk-ar') !== 'سماش قوي يدوي') throw new Error('overwrote a typed name');
+    if (!(await pg.locator('#sug-ar [data-sug]').count())) throw new Error('no suggestions shown');
+    await pg.locator('#sug-ar [data-sug]').first().click(); if (!(await pg.inputValue('#sk-ar')).includes('سماش')) throw new Error('suggestion not used'); });
   await run('link-by-email', asOwner(), async pg => {
     await pg.fill('#link-id-t1', 'Player@Example.com '); await pg.click('[data-act="linkId"][data-id="t1"]'); await pg.waitForTimeout(500);
     if (!(await pg.locator('[data-act="unlink"]').count())) throw new Error('not linked'); }, '#trainee-t1');
