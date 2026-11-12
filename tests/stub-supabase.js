@@ -113,6 +113,14 @@
       const p = T.profiles.find(x => x.id===uid()); if(p){ p.full_name=a.p_full_name||null; p.display_name=a.p_display_name||null; p.phone=a.p_phone||null; }
       rows.forEach(r => { if(r.collection==='trainees' && r.data.linkedUserId===uid()){ if(a.p_display_name||a.p_full_name) r.data.name=a.p_display_name||a.p_full_name; if(a.p_phone) r.data.phone=a.p_phone; } }); return ok(null); },
     set_my_avatar: a => { if(a.p_path && a.p_path.split('/')[0]!==uid()) return fail('not your photo'); const p = T.profiles.find(x => x.id===uid()); if(p) p.avatar_path=a.p_path||null; return ok(null); },
+    admin_create_player: a => { if(!isAdmin(a.p_org)) return fail('only a club admin or sys admin can add players');
+      const em=String(a.p_email||'').trim().toLowerCase(); let u=null, fresh=false;
+      if(em){ u=T.users.find(x=>String(x.email).toLowerCase()===em); if(!u){ u={id:'u'+hex(), email:em, name:a.p_name, role:'player', created_at:new Date().toISOString()}; T.users.push(u); T.profiles.push({id:u.id,email:em,full_name:a.p_name,phone:a.p_phone||null}); fresh=true; } }
+      let tr=u&&rows.find(r=>r.collection==='trainees'&&r.data.linkedUserId===u.id);
+      if(!tr){ const id='p'+hex(); tr={collection:'trainees', id, data:{id, name:a.p_name, phone:a.p_phone||'', level:a.p_level, linkedUserId:u?u.id:''}}; rows.push(tr); }
+      if(!T.players.some(c=>c.org_id===a.p_org&&c.player_id===tr.id)) T.players.push({org_id:a.p_org, player_id:tr.id});
+      (a.p_coaches||[]).forEach(c=>{ if(!T.enroll.some(e=>e.org_id===a.p_org&&e.player_id===tr.id&&e.coach_id===c)) T.enroll.push({org_id:a.p_org, player_id:tr.id, coach_id:c}); });
+      return ok({playerId:tr.id, userId:u?u.id:null, newAccount:fresh}); },
     set_theme: a => { if(!sys()) return fail('only a sys admin can change the theme'); const st=(T.settings||(T.settings=[{key:'theme',value:'protour'}])).find(x=>x.key==='theme'); st.value=a.p_theme; return ok(null); },
     find_user_by_email: a => { const u=T.users.find(x=>(x.email||'').toLowerCase()===String(a.p_email).trim().toLowerCase()); return ok(u?u.id:null); },
     delete_user: a => { T.users=T.users.filter(x=>x.id!==a.p_user); rows.forEach(r=>{if(r.collection==='trainees'&&r.data.linkedUserId===a.p_user)r.data.linkedUserId=''}); return ok(1); },

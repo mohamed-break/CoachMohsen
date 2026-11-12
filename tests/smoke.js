@@ -160,6 +160,16 @@ const shared = () => {
     if (await pg.inputValue('#sk-ar') !== 'سماش قوي يدوي') throw new Error('overwrote a typed name');
     if (!(await pg.locator('#sug-ar [data-sug]').count())) throw new Error('no suggestions shown');
     await pg.locator('#sug-ar [data-sug]').first().click(); if (!(await pg.inputValue('#sk-ar')).includes('سماش')) throw new Error('suggestion not used'); });
+  await run('users-add-player', asOwner(), async pg => {
+    await pg.click('nav.tabs a[href="#users"]'); await pg.waitForSelector('[data-act="quickPlayer"]'); await pg.click('[data-act="quickPlayer"]');
+    await pg.waitForSelector('#qp-name'); await pg.fill('#qp-name', 'Fresh Player'); await pg.fill('#qp-email', 'Fresh@Example.com'); await pg.fill('#qp-phone', '0551234567');
+    await pg.waitForSelector(`#qp-c-${COACH_A.id}`); await pg.check(`#qp-c-${COACH_A.id}`); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(700);
+    const st = await pg.evaluate(id => { const T = window.__STUB__; const tr = T.docs.find(d => d.collection === 'trainees' && d.data.name === 'Fresh Player'); const u = T.users.find(x => x.email === 'fresh@example.com');
+      return { tr: !!tr, linked: tr && u && tr.data.linkedUserId === u.id, coach: tr && T.enroll.some(e => e.player_id === tr.id && e.coach_id === id) }; }, COACH_A.id);
+    if (!st.tr || !st.linked || !st.coach) throw new Error('not created ' + JSON.stringify(st));
+    const tx = await text(pg); if (!tx.includes('fresh@example.com') || !tx.includes('Open profile')) throw new Error('no confirmation / not listed');
+    await pg.click('[data-act="quickPlayer"]'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(200);
+    if (!(await text(pg)).includes('Add a name first.')) throw new Error('saved without a name'); });
   await run('link-by-email', asOwner(), async pg => {
     await pg.fill('#link-id-t1', 'Player@Example.com '); await pg.click('[data-act="linkId"][data-id="t1"]'); await pg.waitForTimeout(500);
     if (!(await pg.locator('[data-act="unlink"]').count())) throw new Error('not linked'); }, '#trainee-t1');
