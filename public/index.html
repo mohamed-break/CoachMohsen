@@ -7,7 +7,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Cairo:wght@700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Montserrat:wght@700;800;900&family=Cairo:wght@700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap">
 <style>
 /* Layout (Padel 360 "Pro Tour" brand: navy + padel-ball yellow, diagonal stripes): sticky navy header with tabs; single column of session/trainee cards; bottom sheet for forms */
 :root{
@@ -47,6 +47,26 @@
   :root[data-brand="royale"]:not([data-theme="light"]){--bg:#0C1713;--surface:#13241D;--sunk:#1A3028;--ink:#E8ECE6;--muted:#A3B5AC;--line:#28423A;--navy:#0B2E24;--primary:#2F7A5F;--court:#8CC7AE;--court-ink:#0C1713;--court-soft:#173A2E;--ball:#D6B25E;--ball-ink:#0E2A20;--ball-deep:#D6B25E;--hot-soft:#3A3018;--hot-ink:#E8C979}}
 :root[data-brand="glass"][data-theme="dark"]{--bg:#0B1424;--surface:#13203A;--sunk:#1A2A4A;--ink:#E6EDF8;--muted:#9DB0CF;--line:#263A5E;--navy:#123E93;--primary:#4F86F0;--court:#7FA8F5;--court-ink:#0B1424;--court-soft:#18315E;--ball:#46C38A;--ball-ink:#06281A;--ball-deep:#46C38A;--hot-soft:#123526;--hot-ink:#7FE0B2}
 :root[data-brand="royale"][data-theme="dark"]{--bg:#0C1713;--surface:#13241D;--sunk:#1A3028;--ink:#E8ECE6;--muted:#A3B5AC;--line:#28423A;--navy:#0B2E24;--primary:#2F7A5F;--court:#8CC7AE;--court-ink:#0C1713;--court-soft:#173A2E;--ball:#D6B25E;--ball-ink:#0E2A20;--ball-deep:#D6B25E;--hot-soft:#3A3018;--hot-ink:#E8C979}
+/* Coach Mohsen: the original look — navy with a coral→orange gradient, Montserrat capitals, the coach's photo */
+:root[data-brand="mohsen"]{
+  --bg:#F4F5F9; --surface:#FFFFFF; --sunk:#EAECF4; --ink:#0D1633; --muted:#5A6280; --line:#D8DCE8;
+  --navy:#0E2272; --primary:#0E2272; --court:#13287A; --court-ink:#FFFFFF; --court-soft:#E1E6F6;
+  --ball:#EE6A3C; --ball-ink:#FFFFFF; --ball-deep:#F28A33; --coral:#E3445A; --orange:#F28A33; --hot-soft:#FCE6DC; --hot-ink:#B3381F;
+  --display:"Montserrat","Arial Black",system-ui,sans-serif; --display-ar:"Cairo","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --body:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif; --r:10px}
+@media (prefers-color-scheme: dark){:root[data-brand="mohsen"]:not([data-theme="light"]){--bg:#0A0F24;--surface:#121A36;--sunk:#1A2344;--ink:#E8EBF6;--muted:#9AA2C2;--line:#27315A;--navy:#0E2272;--primary:#2E4BC4;--court:#8EA4F5;--court-ink:#0A0F24;--court-soft:#1D2A5C;--ball:#F07A45;--ball-ink:#FFFFFF;--ball-deep:#F28A33;--hot-soft:#3A1E1A;--hot-ink:#FF9C70}}
+:root[data-brand="mohsen"][data-theme="dark"]{--bg:#0A0F24;--surface:#121A36;--sunk:#1A2344;--ink:#E8EBF6;--muted:#9AA2C2;--line:#27315A;--navy:#0E2272;--primary:#2E4BC4;--court:#8EA4F5;--court-ink:#0A0F24;--court-soft:#1D2A5C;--ball:#F07A45;--ball-ink:#FFFFFF;--ball-deep:#F28A33;--hot-soft:#3A1E1A;--hot-ink:#FF9C70}
+:root[data-brand="mohsen"] header.top{border-bottom:4px solid transparent;border-image:linear-gradient(90deg,var(--coral),var(--orange)) 1}
+:root[data-brand="mohsen"] .brand h1{font-weight:900;font-size:22px;letter-spacing:.01em}
+:root[data-brand="mohsen"] :is(.brand .tag,.wk-title .no small,.wk-stat.hot b){background:linear-gradient(90deg,var(--coral),var(--orange));-webkit-background-clip:text;background-clip:text;color:transparent}
+:root[data-brand="mohsen"] :is(.wk-h.today .dd,.pc-d.today .n,.pc-next){background:linear-gradient(135deg,var(--coral),var(--orange));color:#FFFFFF}
+:root[data-brand="mohsen"] :is(.btn.ball,.blk.grp>a,.pc-c.grp,#viewSwitch button[aria-pressed="true"]){background:linear-gradient(90deg,var(--coral),var(--orange));border-color:transparent;color:#FFFFFF}
+:root[data-brand="mohsen"] nav.tabs a[aria-current="page"]{border-bottom-color:var(--orange)}
+:root[data-brand="mohsen"] .userchip .av{box-shadow:0 0 0 2px var(--orange)}
+.brand .logo-photo{display:none;flex:none;width:44px;height:44px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--navy),0 0 0 4px var(--orange);background:var(--navy)}
+:root[data-brand="mohsen"] .brand .logo-photo{display:block}
+:root[data-brand="mohsen"] .brand svg.logo{display:none}
+@media (max-width:520px){.brand .logo-photo{width:34px;height:34px}}
 /* Glass Court and Club Royale use sentence-case headings instead of Pro Tour's condensed capitals */
 :root[data-brand="glass"] :is(h2,.brand h1,.wk-title .no,.daylabel .d,.pc-title,.wk-h .dn,.wk-day .wh b),
 :root[data-brand="royale"] :is(h2,.brand h1,.wk-title .no,.daylabel .d,.pc-title,.wk-h .dn,.wk-day .wh b){text-transform:none;letter-spacing:-.01em}
@@ -383,6 +403,7 @@ input[type=email],input[type=password]{width:100%;font:15px var(--body);color:va
   <div class="wrap">
     <div class="brand">
       <svg class="logo" width="40" height="40" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="none" stroke="var(--ball)" stroke-width="3"/><path d="M17 5 A12 12 0 0 1 29 17" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/><circle cx="17" cy="17" r="4.5" fill="var(--ball)"/></svg>
+      <img class="logo-photo" src="coach-mohsen.jpg" alt="" width="44" height="44">
       <div style="min-width:0"><h1 id="brandName">CoachMohsen</h1><span class="tag" id="brandTag">Coach · Train · Improve</span></div>
     </div>
     <div id="viewSwitch" hidden></div>
@@ -447,7 +468,7 @@ en:{brand:"CoachMohsen",tagline:"Coach · Train · Improve",schedule:"Schedule",
  close:"Close",cancelSession:"Cancel session",cancelSessionTitle:"Cancel this session",cancelReasonPh:"e.g. Court unavailable",confirmCancel:"Cancel and notify players",
  coachCancelledMsg:"Your coach cancelled your session on",reasonLabel:"Reason",sessionCancelled:"Session cancelled. Players were notified.",
  evaluation:"Evaluation",privacyLink:"Privacy policy",termsLink:"Terms of service",delUserTitle:"Delete this account?",delUserHint:"The person can no longer sign in. Their player data on this account is removed. If they sign up again with the same email, they get a new account that is not linked to any trainee.",delUserLinked:"This account will be unlinked from trainee",userDeleted:"Account deleted",appearance:"Appearance",appearanceHint:"Choose the look of Padel 360 for everyone: coaches, players and the sign-in screen. Only sys admins see this tab.",activeTheme:"Active",applyTheme:"Apply",themeSaved:"Theme applied for everyone",
- th_protour:"Navy and padel-ball yellow, bold condensed type. Energetic, like a tournament scoreboard.",th_glass:"Court blue and turf green, rounded cards, clean type. Calm and friendly.",th_royale:"Deep green and brass, serif headings. A premium private-club feel.",withGoogle:"Continue with Google",withApple:"Continue with Apple",orEmail:"or use your email",users:"Users",usersHint:"Every new account is a Player. Make someone a Coach to give them the coach view, or a Sys admin to also manage users. You cannot change your own role.",role_player:"Player",role_coach:"Coach",role_sysadmin:"Sys admin",roleCol:"Role",linkedPlayer:"Linked player",joined:"Joined",you:"you",refresh:"Refresh",signIn:"Sign in",signUp:"Create account",forgot:"Forgot password?",email:"Email",password:"Password",newPassword:"New password",setPassword:"Save new password",
+ th_mohsen:"The original Coach Mohsen look: navy with a coral-to-orange gradient, bold Montserrat capitals and the coach's photo in the header.",tagline_mohsen:"Be the best version of yourself",th_protour:"Navy and padel-ball yellow, bold condensed type. Energetic, like a tournament scoreboard.",th_glass:"Court blue and turf green, rounded cards, clean type. Calm and friendly.",th_royale:"Deep green and brass, serif headings. A premium private-club feel.",withGoogle:"Continue with Google",withApple:"Continue with Apple",orEmail:"or use your email",users:"Users",usersHint:"Every new account is a Player. Make someone a Coach to give them the coach view, or a Sys admin to also manage users. You cannot change your own role.",role_player:"Player",role_coach:"Coach",role_sysadmin:"Sys admin",roleCol:"Role",linkedPlayer:"Linked player",joined:"Joined",you:"you",refresh:"Refresh",signIn:"Sign in",signUp:"Create account",forgot:"Forgot password?",email:"Email",password:"Password",newPassword:"New password",setPassword:"Save new password",
  checkEmail:"Check your email and tap the confirmation link, then sign in.",resetSent:"We emailed you a link to set a new password.",haveAccount:"Already have an account? Sign in",noAccount:"New here? Create an account",backToSignIn:"Back to sign in",
  signOut:"Sign out",authTitle:"Welcome to CoachMohsen",authHint:"Players and coaches sign in with their email.",pwHint:"At least 8 characters",blockTime:"Block time",editBlock:"Edit blocked time",blocked:"Blocked",allDay:"All day",fromDate:"From",toDate:"To (for a period)",startT:"Start",endT:"End",
  blockReason:"Reason (optional)",blockReasonPh:"e.g. Travel, tournament, court maintenance",blockHint:"One date with times blocks a time slot. Tick All day to block whole days. Set a later To date to block a period.",
@@ -501,7 +522,7 @@ ar:{brand:"كوتش محسن",tagline:"درّب · تدرّب · تطوّر",sch
  close:"إغلاق",cancelSession:"إلغاء الحصة",cancelSessionTitle:"إلغاء هذه الحصة",cancelReasonPh:"مثال: الملعب غير متاح",confirmCancel:"إلغاء وإبلاغ اللاعبين",
  coachCancelledMsg:"ألغى مدربك حصتك يوم",reasonLabel:"السبب",sessionCancelled:"تم إلغاء الحصة وإبلاغ اللاعبين.",
  evaluation:"التقييم",privacyLink:"سياسة الخصوصية",termsLink:"شروط الاستخدام",delUserTitle:"حذف هذا الحساب؟",delUserHint:"لن يتمكن الشخص من الدخول. تُحذف بيانات اللاعب في هذا الحساب. إذا سجّل مرة أخرى بنفس البريد يحصل على حساب جديد غير مرتبط بأي متدرب.",delUserLinked:"سيتم فك ربط هذا الحساب من المتدرب",userDeleted:"تم حذف الحساب",appearance:"المظهر",appearanceHint:"اختر مظهر بادل 360 للجميع: المدربين واللاعبين وشاشة الدخول. هذا التبويب يظهر لمديري النظام فقط.",activeTheme:"مفعّل",applyTheme:"تطبيق",themeSaved:"تم تطبيق المظهر للجميع",
- th_protour:"كحلي وأصفر كرة البادل وخط عريض مضغوط. حيوي مثل لوحة نتائج البطولات.",th_glass:"أزرق الملعب وأخضر العشب وبطاقات دائرية وخط واضح. هادئ وودود.",th_royale:"أخضر داكن ونحاسي وعناوين بخط كلاسيكي. إحساس نادٍ خاص فاخر.",withGoogle:"المتابعة باستخدام Google",withApple:"المتابعة باستخدام Apple",orEmail:"أو استخدم بريدك الإلكتروني",users:"المستخدمون",usersHint:"كل حساب جديد يكون لاعباً. اجعل الشخص مدرباً ليحصل على واجهة المدرب، أو مدير نظام ليدير المستخدمين أيضاً. لا يمكنك تغيير دورك بنفسك.",role_player:"لاعب",role_coach:"مدرب",role_sysadmin:"مدير نظام",roleCol:"الدور",linkedPlayer:"اللاعب المرتبط",joined:"تاريخ الانضمام",you:"أنت",refresh:"تحديث",signIn:"تسجيل الدخول",signUp:"إنشاء حساب",forgot:"نسيت كلمة المرور؟",email:"البريد الإلكتروني",password:"كلمة المرور",newPassword:"كلمة المرور الجديدة",setPassword:"حفظ كلمة المرور",
+ th_mohsen:"شكل كوتش محسن الأصلي: كحلي مع تدرج من المرجاني إلى البرتقالي، وخط Montserrat عريض، وصورة الكوتش في الأعلى.",tagline_mohsen:"كن أفضل نسخة من نفسك",th_protour:"كحلي وأصفر كرة البادل وخط عريض مضغوط. حيوي مثل لوحة نتائج البطولات.",th_glass:"أزرق الملعب وأخضر العشب وبطاقات دائرية وخط واضح. هادئ وودود.",th_royale:"أخضر داكن ونحاسي وعناوين بخط كلاسيكي. إحساس نادٍ خاص فاخر.",withGoogle:"المتابعة باستخدام Google",withApple:"المتابعة باستخدام Apple",orEmail:"أو استخدم بريدك الإلكتروني",users:"المستخدمون",usersHint:"كل حساب جديد يكون لاعباً. اجعل الشخص مدرباً ليحصل على واجهة المدرب، أو مدير نظام ليدير المستخدمين أيضاً. لا يمكنك تغيير دورك بنفسك.",role_player:"لاعب",role_coach:"مدرب",role_sysadmin:"مدير نظام",roleCol:"الدور",linkedPlayer:"اللاعب المرتبط",joined:"تاريخ الانضمام",you:"أنت",refresh:"تحديث",signIn:"تسجيل الدخول",signUp:"إنشاء حساب",forgot:"نسيت كلمة المرور؟",email:"البريد الإلكتروني",password:"كلمة المرور",newPassword:"كلمة المرور الجديدة",setPassword:"حفظ كلمة المرور",
  checkEmail:"افتح بريدك واضغط رابط التأكيد ثم سجّل الدخول.",resetSent:"أرسلنا لك رابطاً لتعيين كلمة مرور جديدة.",haveAccount:"لديك حساب؟ سجّل الدخول",noAccount:"جديد هنا؟ أنشئ حساباً",backToSignIn:"العودة لتسجيل الدخول",
  signOut:"تسجيل الخروج",authTitle:"أهلاً بك في كوتش محسن",authHint:"اللاعبون والمدربون يدخلون ببريدهم الإلكتروني.",pwHint:"٨ أحرف على الأقل",blockTime:"حجب وقت",editBlock:"تعديل الوقت المحجوب",blocked:"محجوب",allDay:"اليوم كامل",fromDate:"من",toDate:"إلى (لفترة)",startT:"البداية",endT:"النهاية",
  blockReason:"السبب (اختياري)",blockReasonPh:"مثال: سفر، بطولة، صيانة الملعب",blockHint:"تاريخ واحد مع أوقات يحجب فترة زمنية. اختر اليوم كامل لحجب أيام كاملة. حدد تاريخ نهاية لاحقاً لحجب فترة.",
@@ -1184,7 +1205,7 @@ function vTraineeHome(){
 }
 
 // ---------- render ----------
-function applyLang(){document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";$("#brandName").textContent=t("brand");$("#brandTag").textContent=t("tagline");$("#langBtn").textContent=lang==="ar"?"English":"عربي"}
+function applyLang(){document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";$("#brandName").textContent=t("brand");$("#brandTag").textContent=t(S.brand==="mohsen"?"tagline_mohsen":"tagline");$("#langBtn").textContent=lang==="ar"?"English":"عربي"}
 // Who is signed in: name, the club in view and their role there.
 function myName(){const m=authUser?.user_metadata||{},me=S.me||{};return (me.display_name||"").trim()||(me.full_name||"").trim()||m.full_name||m.name||String(authUser?.email||"").split("@")[0]}
 function initials(n){return String(n||"").split(/[\s._-]+/).filter(Boolean).slice(0,2).map(w=>[...w][0]).join("").toUpperCase()||"?"}
@@ -1429,8 +1450,8 @@ document.addEventListener("click",e=>{const b=e.target.closest('[data-act="delUs
     {submitLabel:t("delete"),submitClass:"danger armed"})});
 
 // ---------- app theme (one for everyone; a sys admin changes it) ----------
-const BRANDS=["protour","glass","royale"];
-function applyBrand(b){if(!BRANDS.includes(b))b="protour";S.brand=b;if(b==="protour")delete document.documentElement.dataset.brand;else document.documentElement.dataset.brand=b;try{localStorage.setItem("padelcoach.brand",b)}catch(e){}}
+const BRANDS=["protour","glass","royale","mohsen"];
+function applyBrand(b){if(!BRANDS.includes(b))b="protour";S.brand=b;if(b==="protour")delete document.documentElement.dataset.brand;else document.documentElement.dataset.brand=b;try{localStorage.setItem("padelcoach.brand",b)}catch(e){}const tg=document.getElementById("brandTag");if(tg&&typeof t==="function")tg.textContent=t(b==="mohsen"?"tagline_mohsen":"tagline")}
 try{applyBrand(localStorage.getItem("padelcoach.brand")||"protour")}catch(e){applyBrand("protour")}
 async function loadBrand(){try{const {data,error}=await sb.from("app_public_settings").select("key,value").eq("key","theme").maybeSingle();if(!error&&data&&data.value&&data.value!==S.brand){applyBrand(data.value);render()}}catch(e){}}
 function vAppearance(){
@@ -1444,6 +1465,7 @@ function vAppearance(){
    ${card("protour","Pro Tour",t("th_protour"),"#0B1B4D","#E3F04B","#F3F5FA","'Barlow Condensed',sans-serif","#0B1B4D")}
    ${card("glass","Glass Court",t("th_glass"),"#1A56C9","#3BB07A","#EEF3FA","'Plus Jakarta Sans',sans-serif","#FFFFFF")}
    ${card("royale","Club Royale",t("th_royale"),"#0E3B2E","#C9A24A","#F1F2EE","'Fraunces',serif","#0E3B2E")}
+   ${card("mohsen","Coach Mohsen",t("th_mohsen"),"#0E2272","linear-gradient(90deg,#E3445A,#F28A33)","#F4F5F9","'Montserrat',sans-serif","#FFFFFF")}
   </div></div>`;
 }
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-settheme]");if(!b)return;const v=b.dataset.settheme;if(v===S.brand)return;

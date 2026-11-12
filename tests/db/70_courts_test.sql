@@ -31,3 +31,9 @@ select pg_temp.ok((select count(*) from public.court_busy('2026-12-01')) = 3, 'b
 select pg_temp.ok((select count(*) from public.court_busy('2026-12-01') where mine) = 0, 'busy list marks only own sessions as mine');
 select pg_temp.ok((select count(*) from public.docs where collection = 'sessions' and coach_id <> auth.uid()) = 0, 'coach 1 still cannot read coach 2''s sessions');
 reset role;
+-- the Coach Mohsen look is an allowed theme
+select set_config('request.jwt.claim.sub', (select id::text from auth.users where email = 'sysadmin@coachmohsen.dev'), false);
+set role authenticated;
+select public.set_theme('mohsen');
+reset role;
+select pg_temp.ok((select value from public.app_public_settings where key = 'theme') = 'mohsen', 'sys admin can choose the Coach Mohsen theme');

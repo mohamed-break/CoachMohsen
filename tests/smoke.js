@@ -136,6 +136,13 @@ const shared = () => {
   await run('sysadmin-theme', asOwner(), async pg => {
     await pg.click('nav.tabs a[href="#appearance"]'); await pg.waitForSelector('[data-settheme="glass"]'); await pg.click('[data-settheme="glass"]'); await pg.waitForTimeout(300);
     const b = await pg.evaluate(() => document.documentElement.dataset.brand); if (b !== 'glass') throw new Error('brand ' + b); });
+  await run('theme-coach-mohsen', asOwner(), async pg => {
+    await pg.click('nav.tabs a[href="#appearance"]'); await pg.waitForSelector('[data-settheme="mohsen"]'); await pg.click('[data-settheme="mohsen"]'); await pg.waitForTimeout(400);
+    if (await pg.evaluate(() => document.documentElement.dataset.brand) !== 'mohsen') throw new Error('brand not applied');
+    if (!(await pg.locator('.brand .logo-photo').isVisible()) || await pg.locator('.brand svg.logo').isVisible()) throw new Error('coach photo not shown');
+    if ((await pg.innerText('#brandTag')).toLowerCase() !== 'be the best version of yourself') throw new Error('tagline');
+    if (await pg.evaluate(() => window.__STUB__.settings.find(x => x.key === 'theme').value) !== 'mohsen') throw new Error('not saved');
+    await pg.click('#langBtn'); await pg.waitForTimeout(200); if (await pg.innerText('#brandTag') !== 'كن أفضل نسخة من نفسك') throw new Error('arabic tagline'); });
   await run('link-by-email', asOwner(), async pg => {
     await pg.fill('#link-id-t1', 'Player@Example.com '); await pg.click('[data-act="linkId"][data-id="t1"]'); await pg.waitForTimeout(500);
     if (!(await pg.locator('[data-act="unlink"]').count())) throw new Error('not linked'); }, '#trainee-t1');
