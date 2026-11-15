@@ -139,6 +139,7 @@
     account_meta: () => ok(T.users.filter(u => sys() || rows.some(r => r.collection==='trainees' && r.data.linkedUserId===u.id && canSee(r.id))).map(u => {
       const tr = rows.find(r => r.collection==='trainees' && r.data.linkedUserId===u.id); const p = T.profiles.find(x => x.id===u.id) || {};
       return {user_id:u.id, player_id:tr?tr.id:null, avatar_path:p.avatar_path||null, name:p.display_name||p.full_name||name(u.id), last_sign_in_at:u.last_sign_in_at||null}; })),
+    withdraw_request: a => { const id=a.p_session+':'+uid(); const i=rows.findIndex(r=>r.collection==='requests'&&r.id===id&&r.data.playerUid===uid()&&r.data.status==='pending'); if(i<0) return ok(false); rows.splice(i,1); return ok(true); },
     set_theme: a => { if(!sys()) return fail('only a sys admin can change the theme'); const st=(T.settings||(T.settings=[{key:'theme',value:'protour'}])).find(x=>x.key==='theme'); st.value=a.p_theme; return ok(null); },
     find_user_by_email: a => { const u=T.users.find(x=>(x.email||'').toLowerCase()===String(a.p_email).trim().toLowerCase()); return ok(u?u.id:null); },
     delete_user: a => { T.users=T.users.filter(x=>x.id!==a.p_user); rows.forEach(r=>{if(r.collection==='trainees'&&r.data.linkedUserId===a.p_user)r.data.linkedUserId=''}); return ok(1); },

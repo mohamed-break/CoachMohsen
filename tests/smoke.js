@@ -253,6 +253,18 @@ const shared = () => {
       w.docs.push({ collection: 'sessions', id: 'x9', data: { id: 'x9', date: '2027-01-12', time: '18:00', duration: 60, status: 'planned', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id, activities: [], feedback: {} } }); return w.docs; })() }, async pg => {
     await pg.waitForSelector('[data-act="reqCancel"][data-sid="x9"]'); await pg.click('[data-act="reqCancel"][data-sid="x9"]'); await pg.fill('#rq-reason', 'Travel'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     const r = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'requests')); if (!r || r.id !== 'x9:22222222-2222-4222-8222-222222222222' || r.data.coachId !== 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') throw new Error('request ' + JSON.stringify(r)); });
+  await run('player-withdraw-resend', { ...shared(), user: PLAYER, docs: (() => { const w = shared(); w.docs.find(d => d.id === 't1' && d.collection === 'trainees').data.linkedUserId = PLAYER.id;
+      w.docs.push({ collection: 'sessions', id: 'x9', data: { id: 'x9', date: '2027-01-12', time: '18:00', duration: 60, status: 'planned', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id, activities: [], feedback: {} } });
+      w.docs.push({ collection: 'requests', id: 'x9:' + PLAYER.id, data: { sessionId: 'x9', playerUid: PLAYER.id, playerId: 't1', coachId: COACH_A.id, clubId: 'freelance', status: 'pending', reason: 'Travel', date: '2027-01-12', time: '18:00', seen: true } });
+      return w.docs; })() }, async pg => {
+    await pg.waitForSelector('[data-act="reqWithdraw"][data-sid="x9"]');
+    await pg.click('[data-act="reqCancel"][data-sid="x9"][data-resend]'); await pg.waitForSelector('#rq-reason');
+    if (await pg.inputValue('#rq-reason') !== 'Travel') throw new Error('resend not prefilled'); await pg.fill('#rq-reason', 'Travel, still');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    if (await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'requests').data.reason) !== 'Travel, still') throw new Error('not resent');
+    await pg.click('[data-act="reqWithdraw"][data-sid="x9"]'); await pg.click('[data-act="reqWithdraw"][data-sid="x9"]'); await pg.waitForTimeout(500);
+    if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'requests'))) throw new Error('not withdrawn');
+    await pg.waitForSelector('[data-act="reqCancel"][data-sid="x9"]:not([data-resend])', { timeout: 3000 }); });
   await run('coach-sees-request', asCoachA({ linked: true, extra: [{ collection: 'requests', id: 'x1:' + PLAYER.id, data: { sessionId: 'x1', playerUid: PLAYER.id, playerId: 't1', coachId: COACH_A.id, clubId: 'freelance', status: 'pending', reason: 'Sick', date: '2026-10-28', time: '18:00' } }] }), async pg => {
     await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('[data-act="declineCancel"]'); await pg.click('[data-act="declineCancel"]'); await pg.waitForTimeout(400);
     const r = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'requests').data); if (r.status !== 'declined' || r.seen !== false) throw new Error('not declined ' + JSON.stringify(r)); });
