@@ -977,7 +977,7 @@ function sessionSheet(id,preDate){
   <label class="f">${t("duration")}<input type="number" id="se-dur" name="duration" min="0" step="15" value="${esc(s.duration||"")}"></label>
   <label class="f">${t("status")}<select id="se-status" name="status">${["planned","done","cancelled"].map(x=>`<option value="${x}" ${s.status===x?"selected":""}>${t(x)}</option>`).join("")}</select></label>
   <label class="f">${t("location")}${clubSelect("se-loc",s.location||"")}</label>
-  <label class="f" id="se-court-wrap">${t("court")}${courtSelect("se-court",s.location||"",s.courtId||"",{})}</label>
+  <label class="f" id="se-court-wrap" ${courtsAt(s.location||"").length?"":"hidden"}>${t("court")}${courtSelect("se-court",s.location||"",s.courtId||"",{})}</label>
   ${S.isAdmin&&clubCoaches().length?`<label class="f" style="grid-column:1/-1">${t("coachLabel")}<select id="se-coach" name="coachId">${clubCoaches().map(p=>`<option value="${esc(p.user_id)}" ${(s.coachId||(S.isCoach?meId:S.coachFilter))===p.user_id?"selected":""}>${esc(p.name||p.email)}</option>`).join("")}</select></label>`:""}</div>
   <div class="stack" style="gap:6px"><span class="f" style="font-size:13px;font-weight:600;color:var(--muted)">${t("traineesInSession")}</span>
    ${trs.length?`<div class="pick">${trs.map(x=>`<label><input type="checkbox" id="se-tr-${x.id}" name="tr" value="${x.id}" ${s.traineeIds.includes(x.id)?"checked":""}>${esc(x.name)}</label>`).join("")}</div>`:`<div class="muted">${t("noTrainees")}</div>`}</div>
@@ -988,7 +988,7 @@ function sessionSheet(id,preDate){
     const tids=[...f.querySelectorAll('input[name="tr"]:checked')].map(x=>x.value);
     if(!val(f,"date"))return t("needDate");
     if(val(f,"status")==="done"&&!tids.length)return t("needPlayersDone");
-    if(val(f,"status")!=="cancelled"){if(!val(f,"time"))return t("needTime");if(!val(f,"courtId"))return t("needCourt")}
+    if(val(f,"status")!=="cancelled"&&courtsAt(val(f,"location")).length){if(!val(f,"time"))return t("needTime");if(!val(f,"courtId"))return t("needCourt")}
     {const st=toMin(val(f,"time"));const dur=+val(f,"duration")||60;const who=f.querySelector("#se-coach")?.value||s.coachId||meId;const bl=val(f,"status")!=="cancelled"?blockConflict(val(f,"date"),st==null?0:st,st==null?24*60:st+dur,who):null;
      if(bl)return t("blockedErr")+(bl.reason?" ("+bl.reason+")":"")+". "+t("blockedErrHint");}
     const nid=id||uid();
@@ -1003,7 +1003,7 @@ function sessionSheet(id,preDate){
   },{onDelete:id?async()=>{const ok=await guard(async()=>{await db.doc("sessions/"+id).delete();delete S.sessions[id];for(const tid of before)await syncProgress(tid)});if(ok){toast(t("deleted"));location.hash="week"}return ok}:null,
    init:f=>{const box=f.querySelector("#acts");
     const refreshCourts=async()=>{const st=toMin(val(f,"time")),dur=+val(f,"duration")||60;const busy=await busyCourts(val(f,"date"),st,st==null?null:st+dur,id);
-      const cur=f.querySelector("#se-court")?.value||"";const w=f.querySelector("#se-court-wrap");if(w)w.innerHTML=`${t("court")}${courtSelect("se-court",val(f,"location"),cur,busy)}`};
+      const cur=f.querySelector("#se-court")?.value||"";const w=f.querySelector("#se-court-wrap");if(w){w.hidden=!courtsAt(val(f,"location")).length;w.innerHTML=`${t("court")}${courtSelect("se-court",val(f,"location"),cur,busy)}`}};
     ["#se-date","#se-time","#se-dur","#se-loc"].forEach(q=>f.querySelector(q)?.addEventListener("change",refreshCourts));refreshCourts();
     box.addEventListener("input",e=>{const el=e.target.closest("[data-a]");if(!el)return;const i=+el.closest(".act").dataset.i;s.activities[i][el.dataset.a]=el.value});
     box.addEventListener("change",e=>{const el=e.target.closest("[data-a]");if(!el)return;const i=+el.closest(".act").dataset.i;s.activities[i][el.dataset.a]=el.value});
@@ -1088,15 +1088,15 @@ function slotSheet(tid,slotId){
   <label class="f">${t("time")}<input type="time" id="sl-time" name="time" value="${esc(sl.time||"")}"></label>
   <label class="f">${t("duration")}<input type="number" id="sl-dur" name="duration" min="0" step="15" value="${esc(sl.duration??"")}"></label>
   <label class="f">${t("location")}${clubSelect("sl-loc",sl.location||"")}</label>
-  <label class="f" id="sl-court-wrap">${t("court")}${courtSelect("sl-court",sl.location||"",sl.courtId||"",{})}</label></div>`;
+  <label class="f" id="sl-court-wrap" ${courtsAt(sl.location||"").length?"":"hidden"}>${t("court")}${courtSelect("sl-court",sl.location||"",sl.courtId||"",{})}</label></div>`;
   const write=async slots=>{await db.doc("trainees/"+tid).update({fixedSlots:slots});S.trainees[tid]={...S.trainees[tid],fixedSlots:slots};await syncProgress(tid)};
   openSheet(slotId?t("editSlot"):t("addSlot"),body,async f=>{
-    if(!val(f,"time"))return t("needTime");if(!val(f,"courtId"))return t("needCourt");
+    if(courtsAt(val(f,"location")).length){if(!val(f,"time"))return t("needTime");if(!val(f,"courtId"))return t("needCourt")}
     const ns={id:slotId||uid(),day:Number(val(f,"day")),time:val(f,"time"),duration:val(f,"duration")===""?"":Number(val(f,"duration")),location:val(f,"location"),courtId:val(f,"courtId")};
     const slots=(tr.fixedSlots||[]).filter(x=>x.id!==ns.id).concat(ns);
     if(!await guard(()=>write(slots)))return false;toast(t("saved"));
   },{onDelete:slotId?async()=>{const ok=await guard(()=>write((tr.fixedSlots||[]).filter(x=>x.id!==slotId)));if(ok)toast(t("deleted"));return ok}:null,
-   init:f=>f.querySelector("#sl-loc")?.addEventListener("change",()=>{f.querySelector("#sl-court-wrap").innerHTML=`${t("court")}${courtSelect("sl-court",val(f,"location"),"",{})}`})});
+   init:f=>f.querySelector("#sl-loc")?.addEventListener("change",()=>{const w=f.querySelector("#sl-court-wrap");w.hidden=!courtsAt(val(f,"location")).length;w.innerHTML=`${t("court")}${courtSelect("sl-court",val(f,"location"),"",{})}`})});
 }
 
 // ---------- coach's progressive log (private) ----------
@@ -1335,7 +1335,7 @@ function render(){
   document.documentElement.classList.toggle("wide",(top==="week"&&!r.startsWith("session-")&&S.cView==="week")||r==="users");tabs.hidden=false;const pend=Object.values(S.requests).reduce((a,rq)=>a+Object.values(rq.items||{}).filter(i=>i&&i.status==="pending").length,0);
   clubSwitch();
   if(!S.club){tabs.hidden=true;main.innerHTML=`<div class="empty"><strong>${t("noClubAccess")}</strong><span>${t("noClubAccessHint")}</span></div>`;return}
-  tabs.innerHTML=["week","trainees","skills","clubs",...(S.isAdmin?["team"]:[]),...(S.myRole==="sysadmin"?["users","appearance"]:[])].map(k=>`<a href="#${k}" ${top===k?'aria-current="page"':""}>${t(k)}${k==="week"&&pend?` <span class="pill" style="background:var(--ball);color:var(--ball-ink)">${pend}</span>`:""}</a>`).join("");
+  tabs.innerHTML=["week","trainees","skills","clubs",...(S.isAdmin?["team"]:[]),...(S.myRole==="sysadmin"?["orgs","users","appearance"]:[])].map(k=>`<a href="#${k}" ${top===k?'aria-current="page"':""}>${t(k)}${k==="week"&&pend?` <span class="pill" style="background:var(--ball);color:var(--ball-ink)">${pend}</span>`:""}</a>`).join("");
   if(!S.loaded.trainees||!S.loaded.sessions||!S.loaded.skills||!S.loaded.clubs){main.innerHTML=`<div class="empty">${t("loading")}</div>`;return}
   const active=document.activeElement,aid=active&&active.id,sel=aid&&active.selectionStart;
   main.innerHTML=r==="orgs"&&S.myRole==="sysadmin"?vOrgs():r==="team"&&S.isAdmin?vTeam():r==="appearance"&&S.myRole==="sysadmin"?vAppearance():r==="users"&&S.myRole==="sysadmin"?vUsers():r==="clubs"?vClubs():r==="trainees"?vTrainees():r==="skills"?vSkills():r.startsWith("trainee-")?vTrainee(r.slice(8)):r.startsWith("session-")?vSession(r.slice(8)):coachBar()+vWeek();

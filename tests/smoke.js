@@ -124,11 +124,16 @@ const shared = () => {
 
   // Sys admin
   await run('sysadmin-users', asOwner(), async pg => {
-    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#team,#users,#appearance') throw new Error('tabs ' + t);
+    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#team,#orgs,#users,#appearance') throw new Error('tabs ' + t);
     await pg.click('nav.tabs a[href="#users"]'); await pg.waitForSelector('.utable');
     const opts = await pg.$$eval(`select[data-setrole="${COACH_B.id}"] option`, o => o.map(x => x.value)); if (opts.join() !== 'player,sysadmin') throw new Error('roles ' + opts);
     await pg.selectOption(`select[data-setrole="${COACH_B.id}"]`, 'sysadmin'); await pg.waitForTimeout(400);
     if (await pg.inputValue(`select[data-setrole="${COACH_B.id}"]`) !== 'sysadmin') throw new Error('role not saved'); });
+  await run('sysadmin-clubs', asOwner(), async pg => {
+    await pg.click('nav.tabs a[href="#orgs"]'); await pg.waitForTimeout(300); await pg.click('[data-act="editOrg"]:not([data-id])'); await pg.fill('#org-name', 'Smash Club'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    if (!(await text(pg)).includes('Smash Club')) throw new Error('club not listed');
+    const opts = await pg.$$eval('#clubSwitch option', o => o.map(x => x.textContent)); if (!opts.includes('Smash Club')) throw new Error('not in switcher ' + opts);
+    const sk = await pg.evaluate(() => window.__STUB__.docs.filter(d => d.collection === 'skills' && d.data.clubId !== 'freelance').length); if (sk !== 2) throw new Error('skills not copied ' + sk); });
   await run('sysadmin-hand-over', (() => { const w = asOwner(); w.members.push({ org_id: 'freelance', user_id: COACH_B.id, role: 'coach' }); return w; })(), async pg => {
     await pg.click('nav.tabs a[href="#team"]'); await pg.waitForSelector('#ho-from'); await pg.selectOption('#ho-from', COACH_A.id); await pg.selectOption('#ho-to', COACH_B.id);
     await pg.click('[data-act="handOver"]'); await pg.click('[data-act="handOver"]'); await pg.waitForTimeout(500);
@@ -252,6 +257,11 @@ const shared = () => {
     if (!dis.d || !dis.t.includes('booked 18:00–19:00')) throw new Error('busy court not marked ' + JSON.stringify(dis));
     if (await pg.$eval('#se-court option[value="padel-pro-c2"]', o => o.disabled)) throw new Error('free court disabled');
     if ((await text(pg)).includes('Coach B')) throw new Error('shows who booked it'); });
+  await run('court-optional-without-courts', (() => { const w = asCoachA(); w.docs.filter(d => d.collection === 'venues').forEach(d => { d.data.courts = []; }); return w; })(), async pg => {
+    await pg.locator('[data-act="newSessionOn"]').first().click(); await pg.waitForSelector('#se-time');
+    if (await pg.locator('#se-court-wrap').isVisible()) throw new Error('court field shown for a venue without courts');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    if (await pg.locator('.sheet').count()) throw new Error('could not save without a court'); });
   await run('court-busy-on-save', asCoachA({ extra: [OTHER('2027-03-02', '18:00', 'padel-pro-c1')] }), async pg => {
     // the database rejects a clash even if the screen did not know about it
     await pg.evaluate(() => { window.__STUB__.hideBusy = true; });
