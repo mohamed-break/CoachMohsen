@@ -88,6 +88,10 @@ jobs:
       url: ${{ steps.addr.outputs.url }}
     steps:
       - uses: actions/checkout@v6
+      - name: Stamp the build (open pages use it to notice a new version)
+        run: |
+          sed -i "s/__BUILD__/${GITHUB_SHA}/" public/index.html
+          printf '%s' "$GITHUB_SHA" > public/version.txt
       - id: check
         env:
           T: ${{ secrets.CLOUDFLARE_API_TOKEN }}

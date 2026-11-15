@@ -337,6 +337,15 @@ const shared = () => {
     await pg.click('#userChip'); await pg.waitForSelector('#acctForm'); await pg.fill('#ac-phone', '0501234567'); await pg.click('#acctForm button[type="submit"]'); await pg.waitForTimeout(300);
     const ph = await pg.evaluate(() => window.__STUB__.docs.find(d => d.id === 't1' && d.collection === 'trainees').data.phone); if (ph !== '0501234567') throw new Error('player phone not synced ' + ph);
     await pg.click('a.back'); await pg.waitForSelector('.ptabs'); });
+  { // a newer version goes live while the page is open: the bar appears, and the next return to the app refreshes
+    const pg = await b.newPage({ viewport: { width: 1280, height: 900 } }); let ok2 = true;
+    await pg.addInitScript(st => { window.__STUB__ = st; }, asCoachA());
+    await pg.route('**/', async r => { const res = await r.fetch(); const body = (await res.text()).replace('__BUILD__', '1111111'); r.fulfill({ response: res, body }); });
+    await pg.route('**/version.txt*', r => r.fulfill({ status: 200, contentType: 'text/plain', body: '2222222' }));
+    await pg.goto('http://localhost:8765/'); await pg.waitForTimeout(600);
+    await pg.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))); await pg.waitForTimeout(600);
+    try { await pg.waitForSelector('#updbar', { timeout: 20000 }); console.log('PASS update-notice'); } catch (e) { console.log('FAIL update-notice', e.message); ok = false; }
+    await pg.close(); }
   await run('player-unlinked', { user: { id: '33333333-3333-4333-8333-333333333333', email: 'n@example.com' }, docs: [] }, async pg => {
     await pg.waitForSelector('#my-id'); const v = await pg.inputValue('#my-id'); if (!/^3333/.test(v)) throw new Error('id ' + v); });
   await b.close(); srv.close(); if (errs.length) { console.log('ERRORS:\n' + errs.join('\n')); ok = false; } process.exit(ok ? 0 : 1);
