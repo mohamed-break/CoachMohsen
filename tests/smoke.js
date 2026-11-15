@@ -153,7 +153,7 @@ const shared = () => {
     await pg.click('[data-act="coachThis"]'); await pg.waitForSelector('[data-act="addSlot"]', { timeout: 5000 });
     const st = await pg.evaluate(id => ({ m: window.__STUB__.members.some(m => m.user_id === id && m.role === 'coach'), e: window.__STUB__.enroll.some(e => e.player_id === 't1' && e.coach_id === id) }), OWNER.id);
     if (!st.m || !st.e) throw new Error('not made coach ' + JSON.stringify(st)); }, '#trainee-t1');
-  await run('skill-name-suggest', asCoachA(), async pg => {
+  await run('skill-name-suggest', asOwner(), async pg => {
     await pg.click('nav.tabs a[href="#skills"]'); await pg.waitForTimeout(300); await pg.click('[data-act="newSkill"]'); await pg.waitForSelector('#sk-ar');
     await pg.fill('#sk-ar', 'الفولي الخلفي'); await pg.waitForTimeout(100);
     if (await pg.inputValue('#sk-en') !== 'Backhand volley') throw new Error('en from ar: ' + await pg.inputValue('#sk-en'));
@@ -209,6 +209,25 @@ const shared = () => {
     if (!tx.includes('Last sign-in: 12 Nov 2026')) throw new Error('players last sign-in');
     if (!(await pg.locator('.grid2 a.card .av').count())) throw new Error('no photos on Players');
     await pg.click('#langBtn'); await pg.waitForTimeout(200); if (!(await pg.innerText('footer.sitefoot')).includes('تطوير محمد بريك')) throw new Error('arabic footer'); });
+  await run('coach-cannot-manage-venues-skills', asCoachA(), async pg => {
+    await pg.click('nav.tabs a[href="#clubs"]'); await pg.waitForTimeout(300);
+    if (await pg.locator('[data-act="newClub"],[data-act="editClub"]').count()) throw new Error('coach can edit venues');
+    if (!(await text(pg)).includes('Venues and courts are managed by the club admins.')) throw new Error('no hint');
+    await pg.click('nav.tabs a[href="#skills"]'); await pg.waitForTimeout(300);
+    if (await pg.locator('[data-act="newSkill"],[data-act="editSkill"]').count()) throw new Error('coach can edit skills'); });
+  await run('clubs-tab-venues', asOwner(), async pg => {
+    await pg.click('nav.tabs a[href="#clubs"]'); await pg.waitForTimeout(300);
+    if (!(await pg.innerText('h2')).toLowerCase().includes('freelance coaches')) throw new Error('club not in heading');
+    await pg.click('nav.tabs a[href="#orgs"]'); await pg.waitForTimeout(300);
+    if (!(await text(pg)).includes('4 courts')) throw new Error('venues not listed under the club');
+    await pg.click('[data-act="orgAddVenue"][data-id="academy"]'); await pg.waitForSelector('#cl-name');
+    if ((await pg.inputValue('#cl-org')) !== 'academy') throw new Error('club not preset');
+    await pg.fill('#cl-name', 'Academy Court'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues' && d.data.name === 'Academy Court'));
+    if (!v || v.data.clubId !== 'academy') throw new Error('venue not in academy ' + JSON.stringify(v));
+    await pg.click(`[data-act="orgVenue"][data-id="${v.id}"]`); await pg.waitForSelector('#cl-org'); await pg.selectOption('#cl-org', 'freelance');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    if (await pg.evaluate(id => window.__STUB__.docs.find(d => d.id === id).data.clubId, v.id) !== 'freelance') throw new Error('venue not moved'); });
   await run('link-by-email', asOwner(), async pg => {
     await pg.fill('#link-id-t1', 'Player@Example.com '); await pg.click('[data-act="linkId"][data-id="t1"]'); await pg.waitForTimeout(500);
     if (!(await pg.locator('[data-act="unlink"]').count())) throw new Error('not linked'); }, '#trainee-t1');
