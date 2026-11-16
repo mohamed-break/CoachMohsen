@@ -2,7 +2,8 @@
 #   1. database – applies new files in supabase/migrations and sets the sys admin email
 #   2. site     – publishes public/ to Cloudflare Pages (creates the project on the first run)
 #   3. auth     – tells Supabase sign-in which site address to send people back to
-#   4. report   – writes a short status (no secrets) to the "ci-status" branch
+#   4. push     – sets up phone/computer notifications (keys made once, kept in the database) and checks /api/push
+#   5. report   – writes a short status (no secrets) to the "ci-status" branch
 # Repository secrets used (Settings → Secrets and variables → Actions):
 #   SUPABASE_DB_URL        Supabase → Connect → Session pooler connection string (with the database password)
 #   SUPABASE_ACCESS_TOKEN  Supabase → Account → Access Tokens
@@ -180,8 +181,45 @@ jobs:
           if [ "$code" = "200" ]; then echo "status=ok · sign-in links return to ${PRIMARY:-$SITE} (site answers HTTP $dom)$extra" >> "$GITHUB_OUTPUT"
           else echo "status=failed: Supabase answered HTTP $code" >> "$GITHUB_OUTPUT"; exit 1; fi
 
+  push:
+    needs: [database, site]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.run.outputs.status }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: run
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BASE: https://coachmohsen.net
+        run: |
+          if [ -z "$DB_URL" ]; then echo "status=skipped: SUPABASE_DB_URL secret not set" >> "$GITHUB_OUTPUT"; exit 0; fi
+          command -v psql >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null)
+          api=$(grep -oE 'https://[a-z0-9]+\.supabase\.co' public/config.js | head -1)
+          key=$(grep -oE 'supabaseAnonKey: *"[^"]+"' public/config.js | sed -E 's/.*"([^"]+)"/\1/')
+          # A key pair for signing notifications; only used if the database has none yet.
+          node -e 'const c=require("crypto");const k=c.generateKeyPairSync("ec",{namedCurve:"prime256v1"}).privateKey.export({format:"jwk"});
+            const pub=Buffer.concat([Buffer.from([4]),Buffer.from(k.x,"base64url"),Buffer.from(k.y,"base64url")]).toString("base64url");
+            require("fs").writeFileSync("/tmp/vapid", pub+"\n"+k.d+"\n")'
+          pub=$(sed -n 1p /tmp/vapid); priv=$(sed -n 2p /tmp/vapid); rm -f /tmp/vapid
+          log=$(mktemp)
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -q -v fn="$BASE/api/push" -v api="$api" -v key="$key" -v sub="$BASE" -v pub="$pub" -v priv="$priv" >>"$log" 2>&1 <<'SQL' || { echo "status=failed: $(tail -c 300 "$log" | tr '\n' ' ')" >> "$GITHUB_OUTPUT"; exit 1; }
+          update private.push_config set fn_url = :'fn', api_url = :'api', api_key = :'key', subject = :'sub',
+            vapid_public = coalesce(vapid_public, :'pub'), vapid_private = coalesce(vapid_private, :'priv') where id = 1;
+          insert into public.app_public_settings (key, value) select 'vapid_public', vapid_public from private.push_config where id = 1
+            on conflict (key) do update set value = excluded.value, updated_at = now();
+          SQL
+          ping=$(curl -s --max-time 20 -X POST -H 'Content-Type: application/json' -d '{"ping":true}' "$BASE/api/push" || true)
+          case "$ping" in *ready*) fnok="answering";; *) fnok="not answering yet";; esac
+          cron=$(psql "$DB_URL" -tAc "select count(*) from cron.job where jobname = 'notif-reminders'" 2>/dev/null || echo 0)
+          net=$(psql "$DB_URL" -tAc "select count(*) from pg_extension where extname = 'pg_net'")
+          devs=$(psql "$DB_URL" -tAc "select count(*) from public.push_subscriptions")
+          msgs=$(psql "$DB_URL" -tAc "select count(*) from public.notifications")
+          echo "status=ok · /api/push $fnok · reminders scheduled: $([ "$cron" = "1" ] && echo yes || echo no) · push hand-off: $([ "$net" = "1" ] && echo on || echo off) · devices: $devs · notifications so far: $msgs" >> "$GITHUB_OUTPUT"
+
   report:
-    needs: [database, site, auth]
+    needs: [database, site, auth, push]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -191,14 +229,15 @@ jobs:
           DB: ${{ needs.database.outputs.status }}
           SITE: ${{ needs.site.outputs.status }}
           AUTH: ${{ needs.auth.outputs.status }}
+          PUSH: ${{ needs.push.outputs.status }}
           RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SHA: ${{ github.sha }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           mkdir s && cd s && git init -q && git checkout -q -b ci-status
-          printf '# Last deploy\n\n- commit: %s\n- run: %s\n- time (UTC): %s\n\n| step | result |\n| --- | --- |\n| database | %s |\n| site | %s |\n| auth | %s |\n' \
-            "$SHA" "$RUN" "$(date -u +%FT%TZ)" "${DB:-did not run}" "${SITE:-did not run}" "${AUTH:-did not run}" > STATUS.md
+          printf '# Last deploy\n\n- commit: %s\n- run: %s\n- time (UTC): %s\n\n| step | result |\n| --- | --- |\n| database | %s |\n| site | %s |\n| auth | %s |\n| push | %s |\n' \
+            "$SHA" "$RUN" "$(date -u +%FT%TZ)" "${DB:-did not run}" "${SITE:-did not run}" "${AUTH:-did not run}" "${PUSH:-did not run}" > STATUS.md
           git config user.name "deploy-bot" && git config user.email "deploy-bot@users.noreply.github.com"
           git add STATUS.md && git commit -qm "deploy status $SHA"
           git push -qf "https://x-access-token:${TOKEN}@github.com/${REPO}.git" ci-status

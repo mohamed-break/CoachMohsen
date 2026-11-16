@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="app-build" content="__BUILD__">
 <title>CoachMohsen</title>
-<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="favicon-192.png" sizes="192x192" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="favicon-192.png" sizes="192x192" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CoachMohsen">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Montserrat:wght@700;800;900&family=Cairo:wght@700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap">
@@ -103,6 +103,26 @@ header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px 0;f
 #viewSwitch button{border:0;background:transparent;color:#fff;opacity:.8;font:700 13px var(--body);padding:4px 12px;border-radius:999px;cursor:pointer}
 .clubsw{width:auto;max-width:200px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 12px;font:700 13px var(--body)}
 .clubsw option{color:#111}
+.bellbtn{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;background:transparent;border:1.5px solid currentColor;color:inherit;border-radius:999px;cursor:pointer}
+.bellbtn svg{width:18px;height:18px}.bellbtn[aria-expanded="true"]{background:rgba(255,255,255,.14)}
+.bellbtn .bdg{position:absolute;top:-6px;inset-inline-end:-7px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--coral,#E3445A);color:#fff;font:700 11px/19px var(--body);text-align:center;box-shadow:0 0 0 2px var(--navy,#0B1B4D)}
+@media (max-width:520px){.bellbtn{width:30px;height:30px}.bellbtn svg{width:16px;height:16px}}
+.ntpanel{position:fixed;z-index:35;top:calc(env(safe-area-inset-top,0px) + 62px);inset-inline-end:12px;width:min(390px,calc(100vw - 24px));max-height:min(72vh,620px);display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(5,12,30,.28);overflow:hidden}
+.ntpanel .nthead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.ntpanel .nthead b{font:800 16px var(--body)}
+.ntlinkbtn{background:none;border:0;padding:4px 2px;color:var(--court);font:600 13px var(--body);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.ntlinkbtn:disabled{color:var(--muted);text-decoration:none;cursor:default}
+.ntlist{overflow:auto;flex:1}
+.ntitem{display:grid;grid-template-columns:10px 1fr;column-gap:10px;width:100%;text-align:start;background:none;border:0;border-bottom:1px solid var(--line);padding:11px 14px;color:var(--ink);cursor:pointer;font:400 14px var(--body)}
+.ntitem:hover{background:var(--sunk)}.ntitem.unread{background:var(--court-soft)}
+.ntitem .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;background:transparent}.ntitem.unread .dot{background:var(--coral,#E3445A)}
+.ntitem .tt{font-weight:700}.ntitem .bb{grid-column:2;color:var(--muted);font-size:13px;margin-top:2px;overflow-wrap:anywhere}.ntitem .mm{grid-column:2;color:var(--muted);font-size:12px;margin-top:3px}
+.ntempty{padding:28px 16px;text-align:center;color:var(--muted)}
+.ntprompt{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--sunk);border-bottom:1px solid var(--line);font-size:13px}
+.ntfoot{padding:10px 14px;border-top:1px solid var(--line);text-align:center}
+.ntsw{display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:14px;cursor:pointer}.ntsw input{width:18px;height:18px;margin-top:1px;flex:none;accent-color:var(--court)}
+.ntdev{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.ntsteps{margin:4px 0 0;padding-inline-start:20px;font-size:14px;display:grid;gap:4px}
 .updbar{position:fixed;inset-inline:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;gap:12px;align-items:center;justify-content:space-between;max-width:560px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 12px 10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:600 14px var(--body)}.updbar .btn{background:var(--ball);color:var(--ball-ink);border-color:transparent}
 .linkrow{display:flex;justify-content:space-between;gap:10px;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:6px 0;font:500 14px var(--body);color:var(--ink);cursor:pointer;text-align:start}.linkrow:hover span:first-child{text-decoration:underline}.linkrow .muted{font-size:13px;white-space:nowrap}
 .sitefoot{text-align:center;color:var(--muted);font-size:12.5px;padding-block:6px 28px;margin-top:-56px}.sitefoot a{color:inherit;text-decoration:none;unicode-bidi:isolate}.sitefoot a:hover{text-decoration:underline}
@@ -118,7 +138,7 @@ header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px 0;f
 .userchip .ut{display:flex;flex-direction:column;min-width:0;line-height:1.2}
 .userchip .un{font:700 14px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .userchip .ur{font:500 12px var(--body);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:620px){.hbreak{display:block;order:1;flex-basis:100%;height:0}.userchip:not([hidden]){order:2;flex:1 1 0;min-width:150px;max-width:none}.clubsw:not([hidden]){order:3;flex:0 1 170px;min-width:120px;max-width:none}header.top nav.tabs{order:4}}
+@media (max-width:620px){.hbreak{display:block;order:1;flex-basis:100%;height:0}.userchip:not([hidden]){order:2;flex:1 1 0;min-width:150px;max-width:none}.clubsw:not([hidden]){order:3;flex:0 1 170px;min-width:120px;max-width:none}.bellbtn:not([hidden]){order:3}header.top nav.tabs{order:4}}
 .coachbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
 .coachbar select{width:auto}
 .mtable{width:100%;border-collapse:collapse}.mtable td,.mtable th{padding:10px 12px;border-bottom:1px solid var(--line);text-align:start;font-size:14px}
@@ -427,6 +447,7 @@ input[type=email],input[type=password]{width:100%;font:15px var(--body);color:va
     <div id="viewSwitch" hidden></div>
     <select id="clubSwitch" class="clubsw" hidden></select>
     <div class="hbreak"></div>
+    <button id="bellBtn" class="bellbtn" type="button" hidden aria-haspopup="dialog" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="bdg" hidden></span></button>
     <a id="userChip" class="userchip" href="#account" hidden></a>
     <button class="langbtn" id="signOutBtn" type="button" hidden>Sign out</button>
     <button class="langbtn" id="langBtn" type="button">عربي</button>
@@ -553,7 +574,7 @@ ar:{brand:"كوتش محسن",tagline:"درّب · تدرّب · تطوّر",sch
  inviteMsg:"أهلاً {name}! هذه صفحة تدريبك على كوتش محسن:\n{url}\n\n١. افتح الرابط وأنشئ حساباً ببريدك الإلكتروني.\n٢. انسخ رقم اللاعب الظاهر في الصفحة وأرسله لي هنا.\nبعد أن أربطه ستظهر لك حصصك وتقييماتك وملاحظات المدرب.",clubs:"الأندية",weekNo:"الأسبوع",allPlayers:"كل اللاعبين",allClubs:"كل الأندية",player:"اللاعب",clearFilters:"مسح الفلاتر",noMatchWeek:"لا توجد حصص تطابق هذه الفلاتر هذا الأسبوع.",playersWord:"لاعبين",sessionsShort:"الحصص",hoursShort:"ساعات في الملعب",playersShort:"اللاعبون",unbookedShort:"غير محجوز",now:"الآن",addClub:"إضافة نادٍ",editClub:"تعديل النادي",clubName:"اسم النادي",setDefault:"النادي الافتراضي للحصص الجديدة",defaultTag:"افتراضي",
  noClubs:"لا توجد أندية بعد",noClubsHint:"أضف الأندية التي تدرب فيها، لتظهر كخيارات عند جدولة الحصص."}
 };
-Object.assign(T.en,{newVersion:"A new version of the app is available.",refreshNow:"Refresh",reqResend:"Resend",reqResendTitle:"Resend your cancellation request",reqWithdraw:"Withdraw",reqWithdrawConfirm:"Tap again to withdraw",reqWithdrawn:"Request withdrawn. The session stays booked.",adminsOnlyVenues:"Venues and courts are managed by the club admins.",adminsOnlySkills:"The skill list is managed by the club admins.",courtsCount:"{n} courts",devBy:"Developed by Mohamed Break",lastSignIn:"Last sign-in",neverSignedIn:"Never signed in",noAccount:"No account yet",regPlayer:"Register as player",regDone:"Registered as a player. Coaches can add the details later.",inviteLink:"Invite link",inviteHintCoach:"Send this link to your players. When they open it and sign in (Google is quickest), they are added to your players straight away with the name from their account. Fill in their details later.",inviteHintClub:"Send this link to new players. When they open it and sign in, they join the club. Assign their coaches from their player page.",inviteText:"Join me on {club} to see your padel sessions and progress: {url}",share:"Share",inviteRenew:"Make a new link",inviteRenewConfirm:"Tap again: the old link stops working",inviteRenewHint:"If the link was shared somewhere it should not be, make a new one. The old link stops working; players who already joined are not affected.",invitedBy:"{coach} invited you to train at {club}",invitedClub:"You are invited to join {club}",invitedHint:"Sign in or create an account to accept. Continue with Google is the quickest.",joinedCoach:"You joined {coach} at {club}",joinedClub:"You joined {club}",joinInvalid:"This invite link is no longer valid. Ask your coach for a new one.",addPlayerQuick:"Add player",optional:"optional",quickPlayerHint:"Creates the player in this club in one step. With an email, the player also gets an account and can sign in right away: with Google using that email, or by setting a password with Forgot password.",qpNewAccount:"is ready. They can sign in now with {email} (Google, or Forgot password to set a password).",qpLinked:"was added and linked to their existing account.",qpNoEmail:"was added without an account. Add their email later from the player page to give them access.",openProfile:"Open profile",suggested:"Suggested",coachThis:"Coach this player",slotsOwnHint:"The fixed weekly schedule belongs to each of the player's coaches. Become one of this player's coaches to set your own fixed days and times and book them in one go.",court:"Court",courts:"Courts",addCourt:"Add court",courtName:"Court name",needCourt:"Choose a court.",needTime:"A session on a court needs a start time.",courtBusy:"That court is already booked at this time",courtBusyHint:"Pick another court or time.",busyAt:"booked",noCourts:"No courts yet",courtsHint:"Courts at this venue. Every session is booked on one court, and a court holds one session at a time.",skippedBusy:"skipped (court booked)",myAccount:"My account",photo:"Photo",uploadPhoto:"Upload photo",changePhoto:"Change photo",removePhoto:"Remove photo",photoHint:"JPG, PNG or WebP. It is resized to fit and stays under 2 MB.",photoSaved:"Photo updated",photoRemoved:"Photo removed",photoErr:"Could not use this picture. Try a JPG or PNG.",
+Object.assign(T.en,{ntTitle:"Notifications",ntMarkAll:"Mark all as read",ntEmpty:"No notifications yet.",ntSettings:"Notification settings",ntDevice:"Alerts on this device",ntOn:"On",ntOffWord:"Off",ntTurnOn:"Turn on",ntTurnOff:"Turn off",ntOnToast:"Alerts are on for this device.",ntOffToast:"Alerts are off for this device.",ntFailed:"Could not turn alerts on. Please try again.",ntPrompt:"Get alerts on this phone or computer.",ntNotReady:"Alerts are still being set up. Please try again in a few minutes.",ntIosShort:"On iPhone, add the app to your Home Screen to get alerts.",ntHow:"How?",ntIosTitle:"To get alerts on iPhone or iPad:",ntIos1:"Open this site in Safari and tap the Share button.",ntIos2:"Choose “Add to Home Screen”.",ntIos3:"Open the app from your Home Screen, sign in, then come back here and turn alerts on.",ntDenied:"Alerts are blocked for this site. Allow notifications for this site in your browser or phone settings, then come back here.",ntUnsupported:"This browser cannot show alerts. You will still see everything under the bell.",ntReminders:"Session reminders (a day before and 2 hours before) and the coach's 7:00 summary of the day",ntFeedback:"New feedback from my coach",ntInApp:"Everything also appears under the bell at the top of the page.",newVersion:"A new version of the app is available.",refreshNow:"Refresh",reqResend:"Resend",reqResendTitle:"Resend your cancellation request",reqWithdraw:"Withdraw",reqWithdrawConfirm:"Tap again to withdraw",reqWithdrawn:"Request withdrawn. The session stays booked.",adminsOnlyVenues:"Venues and courts are managed by the club admins.",adminsOnlySkills:"The skill list is managed by the club admins.",courtsCount:"{n} courts",devBy:"Developed by Mohamed Break",lastSignIn:"Last sign-in",neverSignedIn:"Never signed in",noAccount:"No account yet",regPlayer:"Register as player",regDone:"Registered as a player. Coaches can add the details later.",inviteLink:"Invite link",inviteHintCoach:"Send this link to your players. When they open it and sign in (Google is quickest), they are added to your players straight away with the name from their account. Fill in their details later.",inviteHintClub:"Send this link to new players. When they open it and sign in, they join the club. Assign their coaches from their player page.",inviteText:"Join me on {club} to see your padel sessions and progress: {url}",share:"Share",inviteRenew:"Make a new link",inviteRenewConfirm:"Tap again: the old link stops working",inviteRenewHint:"If the link was shared somewhere it should not be, make a new one. The old link stops working; players who already joined are not affected.",invitedBy:"{coach} invited you to train at {club}",invitedClub:"You are invited to join {club}",invitedHint:"Sign in or create an account to accept. Continue with Google is the quickest.",joinedCoach:"You joined {coach} at {club}",joinedClub:"You joined {club}",joinInvalid:"This invite link is no longer valid. Ask your coach for a new one.",addPlayerQuick:"Add player",optional:"optional",quickPlayerHint:"Creates the player in this club in one step. With an email, the player also gets an account and can sign in right away: with Google using that email, or by setting a password with Forgot password.",qpNewAccount:"is ready. They can sign in now with {email} (Google, or Forgot password to set a password).",qpLinked:"was added and linked to their existing account.",qpNoEmail:"was added without an account. Add their email later from the player page to give them access.",openProfile:"Open profile",suggested:"Suggested",coachThis:"Coach this player",slotsOwnHint:"The fixed weekly schedule belongs to each of the player's coaches. Become one of this player's coaches to set your own fixed days and times and book them in one go.",court:"Court",courts:"Courts",addCourt:"Add court",courtName:"Court name",needCourt:"Choose a court.",needTime:"A session on a court needs a start time.",courtBusy:"That court is already booked at this time",courtBusyHint:"Pick another court or time.",busyAt:"booked",noCourts:"No courts yet",courtsHint:"Courts at this venue. Every session is booked on one court, and a court holds one session at a time.",skippedBusy:"skipped (court booked)",myAccount:"My account",photo:"Photo",uploadPhoto:"Upload photo",changePhoto:"Change photo",removePhoto:"Remove photo",photoHint:"JPG, PNG or WebP. It is resized to fit and stays under 2 MB.",photoSaved:"Photo updated",photoRemoved:"Photo removed",photoErr:"Could not use this picture. Try a JPG or PNG.",
  profileDetails:"Profile",fullName:"Full name",displayName:"Display name",displayNameHint:"Shown in the app instead of your full name, e.g. “Coach Mohsen”. Leave empty to use your full name.",
  currentEmail:"Current email",newEmail:"New email",changeEmail:"Change email",emailSame:"That is already your email.",emailSent:"Check both inboxes: confirm the change from the link we sent. Until then you keep signing in with your current email.",emailPending:"Waiting for confirmation of",
  googleEmailNote:"You sign in with Google. Changing the email here does not change your Google account, and Google sign-in keeps working. To sign in with the new email as well, set a password below.",
@@ -567,7 +588,7 @@ Object.assign(T.en,{newVersion:"A new version of the app is available.",refreshN
  removePlayer:"Remove from my players",removePlayerAdmin:"Remove from club",withCoach:"with",
  usersHint:"Every new account is a Player. Coaches and club admins are added inside a club (Clubs or Team). Make someone a Sys admin to let them manage clubs, users and the theme. You cannot change your own role.",
  memberships:"Clubs",noClubAccess:"You are not part of any club yet",noClubAccessHint:"Ask a sys admin to add you to a club."});
-Object.assign(T.ar,{newVersion:"يتوفر إصدار جديد من التطبيق.",refreshNow:"تحديث",reqResend:"إعادة الإرسال",reqResendTitle:"إعادة إرسال طلب الإلغاء",reqWithdraw:"سحب الطلب",reqWithdrawConfirm:"اضغط مرة أخرى للسحب",reqWithdrawn:"تم سحب الطلب. الحصة باقية كما هي.",adminsOnlyVenues:"يدير مديرو النادي الأماكن والملاعب.",adminsOnlySkills:"يدير مديرو النادي قائمة المهارات.",courtsCount:"{n} ملاعب",devBy:"تطوير محمد بريك",lastSignIn:"آخر دخول",neverSignedIn:"لم يسجل الدخول بعد",noAccount:"لا يوجد حساب بعد",regPlayer:"تسجيل كلاعب",regDone:"تم التسجيل كلاعب. يمكن للمدربين إضافة البيانات لاحقاً.",inviteLink:"رابط الدعوة",inviteHintCoach:"أرسل هذا الرابط للاعبيك. عند فتحه وتسجيل الدخول (Google هو الأسرع) يُضاف اللاعب إلى لاعبيك فوراً باسم حسابه. أكمل بياناته لاحقاً.",inviteHintClub:"أرسل هذا الرابط للاعبين الجدد. عند فتحه وتسجيل الدخول ينضمون للنادي. حدّد مدربيهم من صفحة اللاعب.",inviteText:"انضم إلي في {club} لمتابعة حصص البادل وتقدمك: {url}",share:"مشاركة",inviteRenew:"إنشاء رابط جديد",inviteRenewConfirm:"اضغط مرة أخرى: سيتوقف الرابط القديم",inviteRenewHint:"إذا تمت مشاركة الرابط في مكان غير مناسب، أنشئ رابطاً جديداً. سيتوقف الرابط القديم ولن يتأثر اللاعبون الذين انضموا.",invitedBy:"{coach} يدعوك للتدريب في {club}",invitedClub:"أنت مدعو للانضمام إلى {club}",invitedHint:"سجّل الدخول أو أنشئ حساباً للقبول. المتابعة عبر Google هي الأسرع.",joinedCoach:"انضممت إلى {coach} في {club}",joinedClub:"انضممت إلى {club}",joinInvalid:"رابط الدعوة هذا لم يعد صالحاً. اطلب من مدربك رابطاً جديداً.",addPlayerQuick:"إضافة لاعب",optional:"اختياري",quickPlayerHint:"ينشئ اللاعب في هذا النادي بخطوة واحدة. مع البريد يحصل اللاعب على حساب ويمكنه الدخول فوراً: عبر Google بنفس البريد، أو بتعيين كلمة مرور من «نسيت كلمة المرور».",qpNewAccount:"جاهز. يمكنه الدخول الآن بـ {email} (عبر Google، أو «نسيت كلمة المرور» لتعيين كلمة مرور).",qpLinked:"تمت إضافته وربطه بحسابه الحالي.",qpNoEmail:"تمت إضافته بدون حساب. أضف بريده لاحقاً من صفحة اللاعب ليتمكن من الدخول.",openProfile:"فتح الملف",suggested:"مقترح",coachThis:"درّب هذا اللاعب",slotsOwnHint:"الجدول الأسبوعي الثابت خاص بكل مدرب من مدربي اللاعب. انضم كأحد مدربي هذا اللاعب لتحدد أيامك وأوقاتك الثابتة وتحجزها دفعة واحدة.",court:"الملعب",courts:"الملاعب",addCourt:"إضافة ملعب",courtName:"اسم الملعب",needCourt:"اختر الملعب.",needTime:"الحصة على ملعب تحتاج وقت بداية.",courtBusy:"هذا الملعب محجوز في هذا الوقت",courtBusyHint:"اختر ملعباً أو وقتاً آخر.",busyAt:"محجوز",noCourts:"لا توجد ملاعب بعد",courtsHint:"ملاعب هذا المكان. كل حصة تُحجز على ملعب واحد، والملعب يستوعب حصة واحدة في نفس الوقت.",skippedBusy:"تم تخطيها (الملعب محجوز)",myAccount:"حسابي",photo:"الصورة",uploadPhoto:"رفع صورة",changePhoto:"تغيير الصورة",removePhoto:"إزالة الصورة",photoHint:"JPG أو PNG أو WebP. يتم تصغيرها تلقائياً لتبقى أقل من 2 ميجابايت.",photoSaved:"تم تحديث الصورة",photoRemoved:"تمت إزالة الصورة",photoErr:"تعذر استخدام هذه الصورة. جرّب JPG أو PNG.",
+Object.assign(T.ar,{ntTitle:"الإشعارات",ntMarkAll:"تعليم الكل كمقروء",ntEmpty:"لا توجد إشعارات بعد.",ntSettings:"إعدادات الإشعارات",ntDevice:"التنبيهات على هذا الجهاز",ntOn:"مفعّلة",ntOffWord:"متوقفة",ntTurnOn:"تفعيل",ntTurnOff:"إيقاف",ntOnToast:"تم تفعيل التنبيهات على هذا الجهاز.",ntOffToast:"تم إيقاف التنبيهات على هذا الجهاز.",ntFailed:"تعذّر تفعيل التنبيهات. حاول مرة أخرى.",ntPrompt:"استقبل التنبيهات على هذا الجوال أو الكمبيوتر.",ntNotReady:"التنبيهات قيد الإعداد. حاول مرة أخرى بعد دقائق.",ntIosShort:"على الآيفون، أضف التطبيق إلى الشاشة الرئيسية لاستقبال التنبيهات.",ntHow:"كيف؟",ntIosTitle:"لاستقبال التنبيهات على الآيفون أو الآيباد:",ntIos1:"افتح الموقع في Safari واضغط زر المشاركة.",ntIos2:"اختر «إضافة إلى الشاشة الرئيسية».",ntIos3:"افتح التطبيق من الشاشة الرئيسية وسجّل الدخول، ثم ارجع هنا وفعّل التنبيهات.",ntDenied:"التنبيهات محظورة لهذا الموقع. اسمح بالإشعارات لهذا الموقع من إعدادات المتصفح أو الجوال ثم ارجع هنا.",ntUnsupported:"هذا المتصفح لا يدعم التنبيهات. ستجد كل شيء تحت أيقونة الجرس.",ntReminders:"تذكير بالحصص (قبلها بيوم وقبلها بساعتين) وملخص المدرب لليوم الساعة 7:00",ntFeedback:"تقييم جديد من مدربي",ntInApp:"كل الإشعارات تظهر أيضاً تحت أيقونة الجرس أعلى الصفحة.",newVersion:"يتوفر إصدار جديد من التطبيق.",refreshNow:"تحديث",reqResend:"إعادة الإرسال",reqResendTitle:"إعادة إرسال طلب الإلغاء",reqWithdraw:"سحب الطلب",reqWithdrawConfirm:"اضغط مرة أخرى للسحب",reqWithdrawn:"تم سحب الطلب. الحصة باقية كما هي.",adminsOnlyVenues:"يدير مديرو النادي الأماكن والملاعب.",adminsOnlySkills:"يدير مديرو النادي قائمة المهارات.",courtsCount:"{n} ملاعب",devBy:"تطوير محمد بريك",lastSignIn:"آخر دخول",neverSignedIn:"لم يسجل الدخول بعد",noAccount:"لا يوجد حساب بعد",regPlayer:"تسجيل كلاعب",regDone:"تم التسجيل كلاعب. يمكن للمدربين إضافة البيانات لاحقاً.",inviteLink:"رابط الدعوة",inviteHintCoach:"أرسل هذا الرابط للاعبيك. عند فتحه وتسجيل الدخول (Google هو الأسرع) يُضاف اللاعب إلى لاعبيك فوراً باسم حسابه. أكمل بياناته لاحقاً.",inviteHintClub:"أرسل هذا الرابط للاعبين الجدد. عند فتحه وتسجيل الدخول ينضمون للنادي. حدّد مدربيهم من صفحة اللاعب.",inviteText:"انضم إلي في {club} لمتابعة حصص البادل وتقدمك: {url}",share:"مشاركة",inviteRenew:"إنشاء رابط جديد",inviteRenewConfirm:"اضغط مرة أخرى: سيتوقف الرابط القديم",inviteRenewHint:"إذا تمت مشاركة الرابط في مكان غير مناسب، أنشئ رابطاً جديداً. سيتوقف الرابط القديم ولن يتأثر اللاعبون الذين انضموا.",invitedBy:"{coach} يدعوك للتدريب في {club}",invitedClub:"أنت مدعو للانضمام إلى {club}",invitedHint:"سجّل الدخول أو أنشئ حساباً للقبول. المتابعة عبر Google هي الأسرع.",joinedCoach:"انضممت إلى {coach} في {club}",joinedClub:"انضممت إلى {club}",joinInvalid:"رابط الدعوة هذا لم يعد صالحاً. اطلب من مدربك رابطاً جديداً.",addPlayerQuick:"إضافة لاعب",optional:"اختياري",quickPlayerHint:"ينشئ اللاعب في هذا النادي بخطوة واحدة. مع البريد يحصل اللاعب على حساب ويمكنه الدخول فوراً: عبر Google بنفس البريد، أو بتعيين كلمة مرور من «نسيت كلمة المرور».",qpNewAccount:"جاهز. يمكنه الدخول الآن بـ {email} (عبر Google، أو «نسيت كلمة المرور» لتعيين كلمة مرور).",qpLinked:"تمت إضافته وربطه بحسابه الحالي.",qpNoEmail:"تمت إضافته بدون حساب. أضف بريده لاحقاً من صفحة اللاعب ليتمكن من الدخول.",openProfile:"فتح الملف",suggested:"مقترح",coachThis:"درّب هذا اللاعب",slotsOwnHint:"الجدول الأسبوعي الثابت خاص بكل مدرب من مدربي اللاعب. انضم كأحد مدربي هذا اللاعب لتحدد أيامك وأوقاتك الثابتة وتحجزها دفعة واحدة.",court:"الملعب",courts:"الملاعب",addCourt:"إضافة ملعب",courtName:"اسم الملعب",needCourt:"اختر الملعب.",needTime:"الحصة على ملعب تحتاج وقت بداية.",courtBusy:"هذا الملعب محجوز في هذا الوقت",courtBusyHint:"اختر ملعباً أو وقتاً آخر.",busyAt:"محجوز",noCourts:"لا توجد ملاعب بعد",courtsHint:"ملاعب هذا المكان. كل حصة تُحجز على ملعب واحد، والملعب يستوعب حصة واحدة في نفس الوقت.",skippedBusy:"تم تخطيها (الملعب محجوز)",myAccount:"حسابي",photo:"الصورة",uploadPhoto:"رفع صورة",changePhoto:"تغيير الصورة",removePhoto:"إزالة الصورة",photoHint:"JPG أو PNG أو WebP. يتم تصغيرها تلقائياً لتبقى أقل من 2 ميجابايت.",photoSaved:"تم تحديث الصورة",photoRemoved:"تمت إزالة الصورة",photoErr:"تعذر استخدام هذه الصورة. جرّب JPG أو PNG.",
  profileDetails:"الملف الشخصي",fullName:"الاسم الكامل",displayName:"الاسم المعروض",displayNameHint:"يظهر في التطبيق بدلاً من اسمك الكامل، مثل “كوتش محسن”. اتركه فارغاً لاستخدام اسمك الكامل.",
  currentEmail:"البريد الحالي",newEmail:"البريد الجديد",changeEmail:"تغيير البريد",emailSame:"هذا هو بريدك الحالي.",emailSent:"تحقق من صندوقي البريد: أكّد التغيير من الرابط المرسل. حتى ذلك الحين تسجل الدخول ببريدك الحالي.",emailPending:"في انتظار تأكيد",
  googleEmailNote:"أنت تسجل الدخول عبر Google. تغيير البريد هنا لا يغيّر حساب Google، ويظل الدخول عبر Google يعمل. لتسجيل الدخول بالبريد الجديد أيضاً، عيّن كلمة مرور بالأسفل.",
@@ -1329,7 +1350,7 @@ function render(){
   if(role==="loading"){tabs.hidden=true;main.innerHTML=`<div class="empty">${t("loading")}</div>`;return}
   if(role==="auth"||role==="reset"){tabs.hidden=true;$("#viewSwitch").hidden=true;main.innerHTML=vAuth();return}
   if(authUser){const so=$("#signOutBtn");so.hidden=false;so.textContent=t("signOut")}
-  userChip();
+  userChip();ntBell();
   if(route()==="account"&&["coach","trainee"].includes(role)){document.documentElement.classList.remove("wide");tabs.hidden=true;$("#viewSwitch").hidden=true;$("#clubSwitch").hidden=true;
     if(main.querySelector("#acctForm")&&!S.acctRefresh)return;S.acctRefresh=false;main.innerHTML=vAccount();return}
   if(role==="nodb"||role==="signedout"){tabs.hidden=true;main.innerHTML=`<div class="empty"><strong>${role==="nodb"?t("nodb"):t("signedOut")}</strong><span>${role==="nodb"?t("nodbHint"):t("signedOutHint")}</span></div>`;return}
@@ -1736,7 +1757,8 @@ function vAccount(){const me=S.me||{},u=authUser||{};const prov=[...(u.app_metad
   <form id="pwForm" class="card stack" novalidate><span class="eyebrow">${google&&!hasEmailLogin?t("setPasswordTitle"):t("changePassword")}</span>
    ${google&&!hasEmailLogin?`<span class="muted" style="font-size:14px">${t("setPwGoogle")}</span>`:""}
    <label class="f">${t("newPassword")}<input type="password" id="ac-pw" name="password" minlength="8" autocomplete="new-password"><span class="muted" style="font-weight:400">${t("pwHint")}</span></label>
-   <div class="ferr" style="color:var(--bad)" hidden></div><div class="row"><button class="btn" type="submit">${t("save")}</button></div></form></div>`}
+   <div class="ferr" style="color:var(--bad)" hidden></div><div class="row"><button class="btn" type="submit">${t("save")}</button></div></form>
+  <div class="card stack" id="ntCard">${ntCardHtml()}</div></div>`}
 const formMsg=(f,err,ok)=>{const e=f.querySelector(".ferr"),o=f.querySelector(".ok");if(e){e.textContent=err||"";e.hidden=!err}if(o){o.textContent=ok||"";o.hidden=!ok}};
 // Shrink a picture to at most 512 px and save it as JPEG, so uploads stay small.
 function shrinkImage(file){return new Promise((res,rej)=>{const url=URL.createObjectURL(file);const img=new Image();
@@ -1814,6 +1836,107 @@ function showUpdateBar(){if(document.getElementById("updbar"))return;const d=doc
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;if(newBuild&&!busyEditing()){location.reload();return}checkBuild()});
 setInterval(checkBuild,5*60*1000);setTimeout(checkBuild,15000);
 
+// ---------- notifications ----------
+// The database writes a message for each event (bookings, changes, cancellations, requests, feedback, reminders,
+// new players and coaches, new accounts). The bell lists them; phones and computers that switched alerts on
+// also get them through the service worker (sw.js).
+const NT={list:[],open:false,prefs:{},vapid:"",push:"off",busy:false};
+const ntTitle=n=>lang==="ar"?(n.title_ar||n.title_en):(n.title_en||n.title_ar);
+const ntBody=n=>lang==="ar"?(n.body_ar||n.body_en):(n.body_en||n.body_ar);
+const ntUnread=()=>NT.list.filter(n=>!n.read_at).length;
+function ntAgo(ts){const d=new Date(ts),s=(Date.now()-d.getTime())/1000;let rf;try{rf=new Intl.RelativeTimeFormat(lang==="ar"?"ar":"en",{numeric:"auto"})}catch(e){return d.toLocaleString(loc())}
+  if(s<45)return rf.format(0,"second");if(s<3600)return rf.format(-Math.round(s/60),"minute");if(s<86400)return rf.format(-Math.round(s/3600),"hour");
+  if(s<7*86400)return rf.format(-Math.round(s/86400),"day");return d.toLocaleDateString(loc(),{day:"numeric",month:"short"})}
+const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const isStandalone=()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){return false}};
+const pushSupported=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+const b64uBytes=v=>{const s=(v+"=".repeat((4-v.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/");const r=atob(s);return Uint8Array.from(r,c=>c.charCodeAt(0))};
+async function ntPushState(){
+  if(!pushSupported()){NT.push=isIOS&&!isStandalone()?"ios":"unsupported";return}
+  if(Notification.permission==="denied"){NT.push="denied";return}
+  try{const reg=await navigator.serviceWorker.getRegistration();const sub=reg&&await reg.pushManager.getSubscription();NT.push=sub?"on":"off"}catch(e){NT.push="off"}}
+function ntBell(){const b=$("#bellBtn");if(!b)return;const show=!!authUser&&["coach","trainee"].includes(role);b.hidden=!show;if(!show){ntClose();return}
+  const n=ntUnread(),bd=b.querySelector(".bdg");bd.hidden=!n;bd.textContent=n>9?"9+":String(n);
+  b.setAttribute("aria-label",t("ntTitle")+(n?` (${n})`:""));b.title=t("ntTitle");b.setAttribute("aria-expanded",NT.open?"true":"false")}
+function ntPromptHtml(){
+  if(NT.push==="off")return`<div class="ntprompt"><span>${t("ntPrompt")}</span><button class="btn sm primary" type="button" data-nt="enable">${t("ntTurnOn")}</button></div>`;
+  if(NT.push==="ios")return`<div class="ntprompt"><span>${t("ntIosShort")}</span><a class="ntlinkbtn" href="#account" data-nt="settings">${t("ntHow")}</a></div>`;
+  return""}
+function ntPanelHtml(){const items=NT.list.slice(0,50);
+  return`<div class="nthead"><b>${t("ntTitle")}</b><button class="ntlinkbtn" type="button" data-nt="all" ${ntUnread()?"":"disabled"}>${t("ntMarkAll")}</button></div>${ntPromptHtml()}
+  <div class="ntlist">${items.length?items.map(n=>`<button class="ntitem${n.read_at?"":" unread"}" type="button" data-nt="open" data-id="${n.id}"><span class="dot"></span><span class="tt">${esc(ntTitle(n))}</span>${ntBody(n)?`<span class="bb">${esc(ntBody(n))}</span>`:""}<span class="mm">${esc(ntAgo(n.created_at))}</span></button>`).join(""):`<div class="ntempty">${t("ntEmpty")}</div>`}</div>
+  <div class="ntfoot"><a class="ntlinkbtn" href="#account" data-nt="settings">${t("ntSettings")}</a></div>`}
+function ntOpenPanel(){let p=$("#ntPanel");if(!p){p=document.createElement("div");p.id="ntPanel";p.className="ntpanel";p.setAttribute("role","dialog");p.setAttribute("aria-label",t("ntTitle"));document.body.appendChild(p)}
+  p.innerHTML=ntPanelHtml();NT.open=true;ntBell();ntPlace();ntPushState().then(()=>{if(NT.open&&$("#ntPanel"))$("#ntPanel").innerHTML=ntPanelHtml()})}
+// keep the list just under the bell (phones: full width)
+function ntPlace(){const p=$("#ntPanel"),b=$("#bellBtn");if(!p||!b)return;const r=b.getBoundingClientRect(),w=p.offsetWidth,W=innerWidth;
+  const left=document.documentElement.dir==="rtl"?Math.min(Math.max(12,r.right+16-w),W-w-12):Math.min(Math.max(12,r.left-16),W-w-12);
+  p.style.top=Math.round(r.bottom+10)+"px";p.style.left=Math.round(left)+"px";p.style.right="auto"}
+addEventListener("resize",()=>{if(NT.open)ntPlace()});
+function ntClose(){const p=$("#ntPanel");if(p)p.remove();if(NT.open){NT.open=false;const b=$("#bellBtn");if(b)b.setAttribute("aria-expanded","false")}}
+function ntRefresh(){ntBell();const p=$("#ntPanel");if(p&&NT.open)p.innerHTML=ntPanelHtml();const c=$("#ntCard");if(c&&!c.contains(document.activeElement))c.innerHTML=ntCardHtml()}
+function ntCardHtml(){const pr=NT.prefs||{};let dev;
+  if(NT.push==="on")dev=`<div class="ntdev"><span>${t("ntDevice")}: <b>${t("ntOn")}</b></span><button class="btn sm" type="button" data-nt="disable">${t("ntTurnOff")}</button></div>`;
+  else if(NT.push==="off")dev=`<div class="ntdev"><span>${t("ntDevice")}: <b>${t("ntOffWord")}</b></span><button class="btn sm primary" type="button" data-nt="enable">${t("ntTurnOn")}</button></div>`;
+  else if(NT.push==="ios")dev=`<div class="notice"><b>${t("ntIosTitle")}</b><ol class="ntsteps"><li>${t("ntIos1")}</li><li>${t("ntIos2")}</li><li>${t("ntIos3")}</li></ol></div>`;
+  else if(NT.push==="denied")dev=`<div class="notice">${t("ntDenied")}</div>`;
+  else dev=`<div class="notice">${t("ntUnsupported")}</div>`;
+  return`<span class="eyebrow">${t("ntTitle")}</span>${dev}
+   <label class="ntsw"><input type="checkbox" data-ntpref="reminders" ${pr.reminders===false?"":"checked"}><span>${t("ntReminders")}</span></label>
+   <label class="ntsw"><input type="checkbox" data-ntpref="feedback" ${pr.feedback===false?"":"checked"}><span>${t("ntFeedback")}</span></label>
+   <span class="muted" style="font-size:13px">${t("ntInApp")}</span>`}
+async function ntLoad(){if(!sb||!meId)return;try{const {data,error}=await sb.from("notifications").select("id,kind,title_en,body_en,title_ar,body_ar,link,created_at,read_at").order("id",{ascending:false}).limit(60);
+  if(!error&&Array.isArray(data)){NT.list=data;ntRefresh()}}catch(e){}}
+async function ntMarkRead(ids){const now=new Date().toISOString();NT.list.forEach(n=>{if(!n.read_at&&(!ids||ids.includes(n.id)))n.read_at=now});ntRefresh();
+  try{await sb.rpc("mark_notifications_read",{p_ids:ids||null})}catch(e){}}
+async function ntEnable(){if(NT.busy)return;
+  if(!pushSupported()){await ntPushState();ntRefresh();return}
+  if(!NT.vapid){try{const {data}=await sb.rpc("my_notif_prefs");NT.vapid=data?.vapid||""}catch(e){}}
+  if(!NT.vapid){toast(t("ntNotReady"));return}
+  NT.busy=true;try{
+    const perm=await Notification.requestPermission();
+    if(perm!=="granted"){NT.push=perm==="denied"?"denied":"off";ntRefresh();return}
+    const reg=await navigator.serviceWorker.register("/sw.js");await navigator.serviceWorker.ready;
+    const key=b64uBytes(NT.vapid);let sub=await reg.pushManager.getSubscription();
+    try{if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key})}
+    catch(e){if(sub)await sub.unsubscribe();sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key})}
+    const j=sub.toJSON();const {error}=await sb.rpc("save_push_subscription",{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth});throwIf(error);
+    if(NT.prefs.push===false){await sb.rpc("set_notif_prefs",{p_prefs:{push:true}});NT.prefs.push=true}
+    NT.push="on";toast(t("ntOnToast"))}
+  catch(e){console.warn(e);toast(t("ntFailed"))}
+  finally{NT.busy=false;ntRefresh()}}
+async function ntDisable(){if(NT.busy)return;NT.busy=true;try{const reg=await navigator.serviceWorker.getRegistration();const sub=reg&&await reg.pushManager.getSubscription();
+    if(sub){const ep=sub.endpoint;await sub.unsubscribe();await sb.rpc("delete_push_subscription",{p_endpoint:ep})}NT.push="off";toast(t("ntOffToast"))}
+  catch(e){toast(e.message||t("error"))}finally{NT.busy=false;ntRefresh()}}
+function ntGo(n){ntClose();const h=n&&n.link?n.link:"";if((location.hash||"").slice(1)===h)render();else location.hash=h}
+async function ntStart(){
+  if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{});
+    navigator.serviceWorker.addEventListener("message",e=>{const d=e.data||{};if(d.type!=="ntopen")return;if(d.id)ntMarkRead([+d.id]);ntGo({link:d.link||""})})}
+  ntLoad();
+  try{const {data}=await sb.rpc("my_notif_prefs");if(data){NT.vapid=data.vapid||"";NT.prefs=data}}catch(e){}
+  try{sb.rpc("set_my_lang",{p_lang:lang})}catch(e){}
+  await ntPushState();ntRefresh();
+  try{sb.channel("notif-"+Math.random().toString(36).slice(2,8)).on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:`user_id=eq.${meId}`},p=>{
+    const n=p&&p.new;if(!n||NT.list.some(x=>x.id===n.id))return;NT.list.unshift(n);ntRefresh();if(!NT.open)toast(ntTitle(n))}).subscribe()}catch(e){}
+  setInterval(ntLoad,120000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")ntLoad()});
+}
+$("#bellBtn").addEventListener("click",e=>{e.stopPropagation();if(NT.open)ntClose();else ntOpenPanel()});
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-nt]");
+  if(!b){if(NT.open&&!e.target.closest("#ntPanel"))ntClose();return}
+  const a=b.dataset.nt;
+  if(a==="open"){const id=+b.dataset.id;const n=NT.list.find(x=>x.id===id);if(n&&!n.read_at)ntMarkRead([id]);ntGo(n)}
+  else if(a==="all")ntMarkRead(null);
+  else if(a==="enable")ntEnable();
+  else if(a==="disable")ntDisable();
+  else if(a==="settings")ntClose();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&NT.open){ntClose();$("#bellBtn")?.focus()}});
+document.addEventListener("change",async e=>{const el=e.target;if(!el.matches("[data-ntpref]"))return;const k=el.dataset.ntpref,v=el.checked;
+  try{const {data,error}=await sb.rpc("set_notif_prefs",{p_prefs:{[k]:v}});throwIf(error);NT.prefs={...NT.prefs,...(data||{}),vapid:NT.vapid};toast(t("saved"))}
+  catch(err){el.checked=!v;toast(err.message||t("error"))}});
+$("#langBtn").addEventListener("click",()=>{if(sb&&meId)sb.rpc("set_my_lang",{p_lang:lang}).then(()=>{},()=>{});ntRefresh()});
+
 async function boot(){
   render();
   const cfg=window.PADEL_CONFIG||{};
@@ -1842,6 +1965,7 @@ async function boot(){
   sb.from("profiles").select("full_name,display_name,phone,avatar_path,email").eq("id",meId).maybeSingle().then(({data})=>{if(data){S.me=data;render()}},()=>{});
   try{const {data,error}=await sb.rpc("my_context");throwIf(error);CTX={sysadmin:!!data?.sysadmin,memberships:data?.memberships||[],orgs:data?.orgs||[]}}catch(e){console.error(e)}
   S.myRole=CTX.sysadmin?"sysadmin":CTX.memberships.length?"coach":"player";
+  ntStart();
   const reqSub=()=>rsub("requests");
   loadMy360();setInterval(loadMy360,60000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")loadMy360()});
   if(S.myRole!=="player"){

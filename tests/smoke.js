@@ -5,7 +5,7 @@ const srv = http.createServer((q, s) => { let p = q.url.split('?')[0]; if (p ===
   if (p.startsWith('/vendor/')) { s.setHeader('content-type','text/javascript'); return s.end(fs.readFileSync(path.join(__dirname,'stub-supabase.js'))); }
   if (p === '/config.js') { s.setHeader('content-type','text/javascript'); return s.end('window.PADEL_CONFIG={supabaseUrl:"https://stub.supabase.co",supabaseAnonKey:"stub"}'); }
   const f = path.join(root, p); if (!fs.existsSync(f)) { s.statusCode = 404; return s.end(); }
-  s.setHeader('content-type', p.endsWith('.html') ? 'text/html' : p.endsWith('.svg') ? 'image/svg+xml' : 'text/plain'); s.end(fs.readFileSync(f)); });
+  s.setHeader('content-type', p.endsWith('.html') ? 'text/html' : p.endsWith('.svg') ? 'image/svg+xml' : p.endsWith('.js') ? 'text/javascript' : p.endsWith('.webmanifest') ? 'application/manifest+json' : 'text/plain'); s.end(fs.readFileSync(f)); });
 const seed = JSON.parse(fs.readFileSync(path.join(__dirname, 'seed.json'), 'utf8'));
 
 // People (all synthetic)
@@ -305,6 +305,41 @@ const shared = () => {
     if (!tx.includes('Court 4')) throw new Error('courts not listed');
     await pg.click('[data-act="editClub"]'); await pg.click('[data-addcourt]'); await pg.fill('#ct-en-4', 'Center Court'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues').data.courts); if (v.length !== 5 || v[4].name !== 'Center Court' || v[0].id !== 'padel-pro-c1') throw new Error('courts ' + JSON.stringify(v)); });
+
+  // Notifications
+  const notes = [
+    { id: 3, user_id: PLAYER.id, kind: 'booked', title_en: 'New session booked', body_en: 'Coach A · Tue 18:00', title_ar: 'تم حجز حصة جديدة', body_ar: 'Coach A', link: '', created_at: new Date(Date.now() - 120000).toISOString(), read_at: null },
+    { id: 2, user_id: PLAYER.id, kind: 'feedback', title_en: 'New feedback from Coach A', body_en: 'Mon', title_ar: 'تقييم جديد', body_ar: '', link: '', created_at: new Date(Date.now() - 7200000).toISOString(), read_at: null },
+    { id: 1, user_id: COACH_A.id, kind: 'request', title_en: 'SECRET-OTHER', body_en: '', title_ar: 'x', body_ar: '', link: '', created_at: new Date().toISOString(), read_at: null }];
+  await run('notifications-bell', { ...world({ user: PLAYER, linked: true }), notifs: notes }, async pg => {
+    await pg.waitForSelector('#bellBtn:not([hidden])'); const bd = await pg.textContent('#bellBtn .bdg');
+    if (bd.trim() !== '2') throw new Error('badge shows ' + bd);
+    await pg.click('#bellBtn'); await pg.waitForSelector('#ntPanel .ntitem');
+    const items = await pg.$$eval('#ntPanel .ntitem', x => x.length); if (items !== 2) throw new Error('items ' + items);
+    if ((await text(pg)).includes('SECRET-OTHER')) throw new Error('shows someone else\'s notification');
+    await pg.click('#ntPanel .ntitem[data-id="3"]'); await pg.waitForTimeout(200);
+    if (await pg.$('#ntPanel')) throw new Error('panel still open after choosing an item');
+    if ((await pg.textContent('#bellBtn .bdg')).trim() !== '1') throw new Error('badge did not drop to 1');
+    await pg.click('#bellBtn'); await pg.click('[data-nt="all"]'); await pg.waitForTimeout(150);
+    if (!(await pg.$eval('#bellBtn .bdg', e => e.hidden))) throw new Error('badge still shown after mark all');
+    if (await pg.$('#ntPanel .ntitem.unread')) throw new Error('unread items remain');
+    await pg.keyboard.press('Escape'); if (await pg.$('#ntPanel')) throw new Error('Escape did not close');
+  });
+  await run('notifications-settings', { ...world({ user: PLAYER, linked: true }), notifs: notes, notifPrefs: { reminders: true } }, async pg => {
+    await pg.waitForSelector('#ntCard'); const t = await pg.textContent('#ntCard');
+    if (!/reminders/i.test(t)) throw new Error('no reminder setting');
+    await pg.uncheck('[data-ntpref="reminders"]'); await pg.waitForTimeout(200);
+    const st = await pg.evaluate(() => window.__STUB__.notifPrefs); if (st.reminders !== false) throw new Error('reminder setting not saved');
+    if (!(await pg.$('[data-nt="enable"]')) && !(await pg.$('#ntCard .notice'))) throw new Error('no device switch or guidance');
+    await pg.click('#langBtn'); await pg.waitForTimeout(200);
+    if ((await pg.evaluate(() => window.__STUB__.myLang)) !== 'ar') throw new Error('language not sent');
+    if (!(await pg.textContent('#ntCard')).includes('الإشعارات')) throw new Error('settings not in Arabic');
+  }, '#account');
+  await run('notifications-coach', { ...asCoachA(), notifs: notes }, async pg => {
+    await pg.waitForSelector('#bellBtn:not([hidden])'); await pg.click('#bellBtn'); await pg.waitForSelector('#ntPanel');
+    const t = await pg.textContent('#ntPanel'); if (!t.includes('SECRET-OTHER')) throw new Error('coach does not see own notification');
+    if (t.includes('New session booked')) throw new Error('coach sees the player\'s notifications');
+  });
 
   // My account
   const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAFElEQVR4nGP8z8DAwMDAxMDAwAAAJAQDAcF0ux0AAAAASUVORK5CYII=', 'base64');
