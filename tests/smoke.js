@@ -306,6 +306,28 @@ const shared = () => {
     await pg.click('[data-act="editClub"]'); await pg.click('[data-addcourt]'); await pg.fill('#ct-en-4', 'Center Court'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues').data.courts); if (v.length !== 5 || v[4].name !== 'Center Court' || v[0].id !== 'padel-pro-c1') throw new Error('courts ' + JSON.stringify(v)); });
 
+  // Player page: the player's sessions with Edit / Cancel right there
+  await run('trainee-sessions', asCoachA({ extra: [{ collection: 'sessions', id: 'fut9', data: { id: 'fut9', date: '2030-02-05', time: '18:30', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('#trSessions');
+    if (!(await pg.$('#trSessions [data-act="cancelSession"][data-id="fut9"]')) || !(await pg.$('#trSessions [data-act="editSession"][data-id="fut9"]'))) throw new Error('no edit/cancel on the player page');
+    await pg.click('#trSessions [data-act="editSession"][data-id="fut9"]'); await pg.waitForSelector('.sheet'); await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+    await pg.click('#trSessions [data-trsess="past"]'); await pg.waitForTimeout(200);
+    if (await pg.$('#trSessions [data-id="fut9"]')) throw new Error('upcoming session listed under past');
+    await pg.click('#trSessions [data-trsess="up"]'); await pg.click('#trSessions [data-act="trNewSession"]'); await pg.waitForSelector('.sheet');
+    const pre = await pg.evaluate(() => [...document.querySelectorAll('.sheet input[type="checkbox"]:checked')].map(x => x.value || x.dataset.id || x.id).join(','));
+    if (!/t1/.test(pre)) throw new Error('new session not pre-filled with the player: ' + pre);
+    await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+    await pg.click('#langBtn'); await pg.waitForTimeout(300);
+    const tm = await pg.textContent('#trSessions'); if (!tm.includes('06:30 م')) throw new Error('Arabic time format: ' + tm.slice(0, 200));
+    if (tm.includes('18:30')) throw new Error('24-hour time left in Arabic');
+    const order = await pg.evaluate(() => [...document.querySelectorAll('#trSessions .time')].slice(0, 1).map(el => { const w = document.createTreeWalker(el, 4); let t;
+      while ((t = w.nextNode()) && t.textContent.indexOf('م') < 0); if (!t) return 'none ' + JSON.stringify(el.textContent);
+      const x = t.textContent, k = x.indexOf('م'), r = document.createRange(); r.setStart(t, k); r.setEnd(t, k + 1); const xm = r.getBoundingClientRect().x;
+      const xs = [...x].map((c, i) => /[0-9]/.test(c) ? (r.setStart(t, i), r.setEnd(t, i + 1), r.getBoundingClientRect().x) : null).filter(v => v != null); return xm > Math.max(...xs) && xs[0] < xs[xs.length - 1] ? 'ok' : 'bad ' + JSON.stringify(x) + ' ' + xm + ' ' + xs.join(','); })[0]);
+    await (await pg.$('#trSessions .time')).screenshot({ path: '/tmp/claude-0/-home-claude/b67e96e7-5324-5d1c-8f05-8bec10272ab4/scratchpad/shots/ar-time.png' });
+    if (order !== 'ok') throw new Error('Arabic time not hours-first: ' + order);
+  });
+
   // Venue address, map location and phone
   await run('venue-contact', asOwner(), async pg => {
     await pg.click('nav.tabs a[href="#clubs"]'); await pg.waitForSelector('[data-act="editClub"]');

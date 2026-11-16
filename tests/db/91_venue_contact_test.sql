@@ -36,3 +36,9 @@ set role authenticated;
 update public.docs set data = data || '{"phone":"+966522222222"}' where collection = 'venues' and id = 'vv1';
 reset role;
 select pg_temp.ok((select data ->> 'phone' from public.docs where id = 'vv1' and collection = 'venues') = '+966522222222', 'club admin can change venue details');
+
+-- Arabic times: 12-hour with ص/م, isolated left-to-right
+select pg_temp.ok(public.notif_tm('18:05', 'ar') = chr(8294) || '06:05 م' || chr(8297), 'evening time in Arabic');
+select pg_temp.ok(public.notif_tm('00:30', 'ar') = chr(8294) || '12:30 ص' || chr(8297), 'after midnight in Arabic');
+select pg_temp.ok(public.notif_tm('18:05', 'en') = '18:05', 'English stays 24-hour');
+select pg_temp.ok(public.notif_when('{"date":"2026-11-17","time":"09:00"}', 'ar') like '%09:00 ص%', 'Arabic session line uses the new format');
