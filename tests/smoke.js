@@ -124,7 +124,7 @@ const shared = () => {
 
   // Sys admin
   await run('sysadmin-users', asOwner(), async pg => {
-    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#team,#orgs,#users,#appearance') throw new Error('tabs ' + t);
+    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#team,#clubsettings,#orgs,#users,#notiflog,#appearance') throw new Error('tabs ' + t);
     await pg.click('nav.tabs a[href="#users"]'); await pg.waitForSelector('.utable');
     const opts = await pg.$$eval(`select[data-setrole="${COACH_B.id}"] option`, o => o.map(x => x.value)); if (opts.join() !== 'player,sysadmin') throw new Error('roles ' + opts);
     await pg.selectOption(`select[data-setrole="${COACH_B.id}"]`, 'sysadmin'); await pg.waitForTimeout(400);
@@ -305,6 +305,43 @@ const shared = () => {
     if (!tx.includes('Court 4')) throw new Error('courts not listed');
     await pg.click('[data-act="editClub"]'); await pg.click('[data-addcourt]'); await pg.fill('#ct-en-4', 'Center Court'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues').data.courts); if (v.length !== 5 || v[4].name !== 'Center Court' || v[0].id !== 'padel-pro-c1') throw new Error('courts ' + JSON.stringify(v)); });
+
+  // Club settings: suggested planned sessions on/off
+  await run('club-settings', asOwner(), async pg => {
+    await pg.click('nav.tabs a[href="#clubsettings"]'); await pg.waitForSelector('[data-clubset="suggestPlanned"]');
+    if (!(await pg.isChecked('[data-clubset="suggestPlanned"]'))) throw new Error('suggestions not on by default');
+    await pg.uncheck('[data-clubset="suggestPlanned"]'); await pg.waitForTimeout(300);
+    if ((await pg.evaluate(() => window.__STUB__.orgs.find(o => o.id === 'freelance').settings || {})).suggestPlanned !== false) throw new Error('setting not saved');
+  });
+  const ghostsOf = async pg => { await pg.waitForSelector('#wkf-cancelled'); await pg.waitForTimeout(400); return pg.$$eval('.ghost', x => x.length); };
+  await run('suggestions-on', asCoachA(), async pg => { if (!(await ghostsOf(pg))) throw new Error('no suggested sessions when the setting is on'); });
+  await run('suggestions-off', { ...asCoachA(), orgs: [{ id: 'freelance', name: 'Freelance coaches', is_freelance: true, settings: { suggestPlanned: false } }, { id: 'academy', name: 'Academy', is_freelance: false }] },
+    async pg => { if (await ghostsOf(pg)) throw new Error('suggested sessions shown although the club turned them off'); });
+  await run('club-settings-coach', asCoachA(), async pg => {
+    await pg.waitForSelector('nav.tabs a[href="#week"]');
+    if (await pg.$('nav.tabs a[href="#clubsettings"]')) throw new Error('coach sees club settings');
+    if (await pg.$('nav.tabs a[href="#notiflog"]')) throw new Error('coach sees the notification log');
+  });
+  // Cancelled sessions hidden by default
+  await run('hide-cancelled', asCoachA({ extra: [{ collection: 'sessions', id: 'cx1', data: { id: 'cx1', date: new Date().toISOString().slice(0, 10), time: '07:15', duration: 60, status: 'cancelled', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
+    await pg.waitForSelector('#wkf-cancelled'); await pg.waitForTimeout(300);
+    if ((await pg.inputValue('#wkf-cancelled')) !== '') throw new Error('default is not Hide');
+    if ((await text(pg)).includes('07:15')) throw new Error('cancelled session shown by default');
+    await pg.selectOption('#wkf-cancelled', 'show'); await pg.waitForTimeout(300);
+    if (!(await text(pg)).includes('07:15')) throw new Error('cancelled session not shown after choosing Show');
+  });
+  // Sys admin: notification log
+  await run('notification-log', { ...asOwner(), notifs: [
+      { id: 7, user_id: PLAYER.id, kind: 'booked', title_en: 'New session booked', body_en: 'Coach A · Tue', title_ar: 'x', body_ar: '', link: '', created_at: new Date().toISOString(), read_at: null, org_id: 'freelance', venue: 'Padel Pro', coach_id: COACH_A.id, player_id: 't1' },
+      { id: 6, user_id: COACH_A.id, kind: 'request', title_en: 'Sample asked to cancel', body_en: '', title_ar: 'x', body_ar: '', link: '', created_at: new Date(Date.now() - 3600e3).toISOString(), read_at: new Date().toISOString(), org_id: 'freelance', player_id: 't1' }] }, async pg => {
+    await pg.click('nav.tabs a[href="#notiflog"]'); await pg.waitForSelector('.nltable tbody tr');
+    const n = await pg.$$eval('.nltable tbody tr', x => x.length); if (n !== 2) throw new Error('rows ' + n);
+    const tx = await pg.textContent('.nltable'); if (!tx.includes('Unread') || !tx.includes('Freelance coaches')) throw new Error('read state or club missing');
+    await pg.selectOption('[data-nlf="status"]', 'unread'); await pg.waitForTimeout(400);
+    if ((await pg.$$eval('.nltable tbody tr', x => x.length)) !== 1) throw new Error('status filter did not apply');
+    await pg.selectOption('[data-nlf="player"]', 't1'); await pg.waitForTimeout(400);
+    const f = await pg.evaluate(() => window.__STUB__.lastNlFilter); if (f.player !== 't1' || f.status !== 'unread') throw new Error('filters not sent ' + JSON.stringify(f));
+  });
 
   // Player page: the player's sessions with Edit / Cancel right there
   await run('trainee-sessions', asCoachA({ extra: [{ collection: 'sessions', id: 'fut9', data: { id: 'fut9', date: '2030-02-05', time: '18:30', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {

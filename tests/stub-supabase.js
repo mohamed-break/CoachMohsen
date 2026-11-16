@@ -145,6 +145,15 @@
     my_venues: () => { const mine = new Set((T.members||[]).filter(m => m.user_id===uid()).map(m => m.org_id));
       rows.filter(r => r.collection==='trainees' && r.data.linkedUserId===uid()).forEach(tr => (T.players||[]).filter(p => p.player_id===tr.id).forEach(p => mine.add(p.org_id)));
       return ok(rows.filter(r => r.collection==='venues' && mine.has(r.data.clubId)).map(r => ({ id:r.id, clubId:r.data.clubId, name:r.data.name, address:r.data.address||'', mapsUrl:r.data.mapsUrl||'', phone:r.data.phone||'', courts:r.data.courts||[] }))); },
+    club_settings: () => ok(Object.fromEntries(T.orgs.map(o => [o.id, o.settings||{}]))),
+    set_club_settings: a => { const adm = sys() || T.members.some(m => m.user_id===uid() && m.org_id===a.p_org && m.role==='club_admin');
+      if (!adm) return { data:null, error:{ message:'Only club admins can change club settings' } };
+      const o = T.orgs.find(x => x.id===a.p_org); o.settings = { ...(o.settings||{}), ...a.p_settings }; return ok(o.settings); },
+    admin_notifications: a => { if (!sys()) return { data:null, error:{ message:'Only sys admins' } }; T.lastNlFilter = a.p_filters;
+      const f = a.p_filters||{}; return ok((T.notifs||[]).filter(n => (!f.org||n.org_id===f.org) && (!f.player||n.player_id===f.player) && (!f.status||(f.status==='read')===!!n.read_at))
+        .map(n => ({ ...n, user_name: name(n.user_id), user_email: ((T.profiles||[]).find(p => p.id===n.user_id)||{}).email, org_name: (T.orgs.find(o => o.id===n.org_id)||{}).name, player_name: n.player_id ? (doc('trainees', n.player_id)||{data:{}}).data.name : null }))); },
+    admin_notif_filters: () => ok({ orgs: T.orgs.map(o => ({ id:o.id, name:o.name })), venues: rows.filter(r => r.collection==='venues').map(r => ({ name:r.data.name, org:r.data.clubId })),
+      coaches: T.members.map(m => ({ id:m.user_id, name:name(m.user_id), orgs:[m.org_id] })), players: rows.filter(r => r.collection==='trainees').map(r => ({ id:r.id, name:r.data.name, orgs:(T.players||[]).filter(p => p.player_id===r.id).map(p => p.org_id) })) }),
     my_notif_prefs: () => ok({...(T.notifPrefs||{}), vapid: T.vapid||null}),
     set_notif_prefs: a => { T.notifPrefs={...(T.notifPrefs||{}), ...a.p_prefs}; return ok(T.notifPrefs); },
     set_my_lang: a => { T.myLang=a.p_lang; return ok(null); },
