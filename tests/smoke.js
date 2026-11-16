@@ -306,6 +306,34 @@ const shared = () => {
     await pg.click('[data-act="editClub"]'); await pg.click('[data-addcourt]'); await pg.fill('#ct-en-4', 'Center Court'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues').data.courts); if (v.length !== 5 || v[4].name !== 'Center Court' || v[0].id !== 'padel-pro-c1') throw new Error('courts ' + JSON.stringify(v)); });
 
+  // Venue address, map location and phone
+  await run('venue-contact', asOwner(), async pg => {
+    await pg.click('nav.tabs a[href="#clubs"]'); await pg.waitForSelector('[data-act="editClub"]');
+    await pg.click('[data-act="editClub"]'); await pg.waitForSelector('#cl-maps');
+    await pg.fill('#cl-maps', 'not a link'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(200);
+    if (!(await pg.$('#cl-maps'))) throw new Error('bad map link accepted');
+    await pg.fill('#cl-addr', 'Al Andalus, Riyadh'); await pg.fill('#cl-maps', '24.713600, 46.675300'); await pg.fill('#cl-phone', '+966 50 000 0000');
+    if (!(await pg.$('.sheet .vltest a[href*="destination=24.713600"]'))) throw new Error('no map check link');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues' && d.data.phone));
+    if (!v || v.data.address !== 'Al Andalus, Riyadh' || !v.data.mapsUrl) throw new Error('details not saved ' + JSON.stringify(v && v.data));
+    const card = await text(pg); if (!card.includes('Al Andalus, Riyadh') || !card.includes('+966 50 000 0000')) throw new Error('details not on the venue card');
+    if (!(await pg.$('.vl[data-href*="google.com/maps/dir"]')) || !(await pg.$('.vl[data-href="tel:+966500000000"]'))) throw new Error('no directions/call links');
+    const sess = await pg.evaluate(name => { const d = window.__STUB__.docs.find(x => x.collection === 'sessions'); return d && d.id; }, v.data.name);
+    await pg.evaluate(([id, name]) => { location.hash = 'session-' + id; }, [sess, v.data.name]);
+    const sv = await pg.evaluate(id => window.__STUB__.docs.find(x => x.id === id).data.location, sess);
+    await pg.waitForTimeout(400);
+    if (sv === v.data.name && !(await pg.$('.vblock .vl[data-href*="google.com/maps"]'))) throw new Error('session page has no directions');
+  });
+  await run('venue-contact-player', (() => { const w = shared(); w.user = PLAYER; w.docs.find(d => d.id === 't1' && d.collection === 'trainees').data.linkedUserId = PLAYER.id;
+      const v = w.docs.find(d => d.collection === 'venues'); Object.assign(v.data, { address: 'Al Andalus, Riyadh', mapsUrl: 'https://maps.app.goo.gl/abc', phone: '+966500000000' });
+      w.docs.push({ collection: 'sessions', id: 'fut1', data: { id: 'fut1', date: '2030-01-15', time: '18:00', duration: 60, status: 'planned', location: v.data.name + ' · Court 2', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } });
+      return w; })(), async pg => {
+    await pg.waitForSelector('.pc-next'); await pg.waitForTimeout(400);
+    if (!(await pg.$('.pc-next .vl[data-href="https://maps.app.goo.gl/abc"]'))) throw new Error('next session has no directions');
+    if (!(await pg.$('.pc-next .vl[data-href="tel:+966500000000"]'))) throw new Error('next session has no call link');
+  });
+
   // Notifications
   const notes = [
     { id: 3, user_id: PLAYER.id, kind: 'booked', title_en: 'New session booked', body_en: 'Coach A · Tue 18:00', title_ar: 'تم حجز حصة جديدة', body_ar: 'Coach A', link: '', created_at: new Date(Date.now() - 120000).toISOString(), read_at: null },

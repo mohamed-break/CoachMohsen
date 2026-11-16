@@ -142,6 +142,9 @@
       return {user_id:u.id, player_id:tr?tr.id:null, avatar_path:p.avatar_path||null, name:p.display_name||p.full_name||name(u.id), last_sign_in_at:u.last_sign_in_at||null}; })),
     withdraw_request: a => { const id=a.p_session+':'+uid(); const i=rows.findIndex(r=>r.collection==='requests'&&r.id===id&&r.data.playerUid===uid()&&r.data.status==='pending'); if(i<0) return ok(false); rows.splice(i,1); return ok(true); },
     mark_notifications_read: a => { let n=0; (T.notifs||[]).forEach(x=>{ if(x.user_id===uid()&&!x.read_at&&(!a.p_ids||a.p_ids.includes(x.id))){x.read_at=new Date().toISOString();n++} }); return ok(n); },
+    my_venues: () => { const mine = new Set((T.members||[]).filter(m => m.user_id===uid()).map(m => m.org_id));
+      rows.filter(r => r.collection==='trainees' && r.data.linkedUserId===uid()).forEach(tr => (T.players||[]).filter(p => p.player_id===tr.id).forEach(p => mine.add(p.org_id)));
+      return ok(rows.filter(r => r.collection==='venues' && mine.has(r.data.clubId)).map(r => ({ id:r.id, clubId:r.data.clubId, name:r.data.name, address:r.data.address||'', mapsUrl:r.data.mapsUrl||'', phone:r.data.phone||'', courts:r.data.courts||[] }))); },
     my_notif_prefs: () => ok({...(T.notifPrefs||{}), vapid: T.vapid||null}),
     set_notif_prefs: a => { T.notifPrefs={...(T.notifPrefs||{}), ...a.p_prefs}; return ok(T.notifPrefs); },
     set_my_lang: a => { T.myLang=a.p_lang; return ok(null); },
