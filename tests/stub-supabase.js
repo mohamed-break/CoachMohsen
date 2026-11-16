@@ -154,6 +154,8 @@
         .map(n => ({ ...n, user_name: name(n.user_id), user_email: ((T.profiles||[]).find(p => p.id===n.user_id)||{}).email, org_name: (T.orgs.find(o => o.id===n.org_id)||{}).name, player_name: n.player_id ? (doc('trainees', n.player_id)||{data:{}}).data.name : null }))); },
     admin_notif_filters: () => ok({ orgs: T.orgs.map(o => ({ id:o.id, name:o.name })), venues: rows.filter(r => r.collection==='venues').map(r => ({ name:r.data.name, org:r.data.clubId })),
       coaches: T.members.map(m => ({ id:m.user_id, name:name(m.user_id), orgs:[m.org_id] })), players: rows.filter(r => r.collection==='trainees').map(r => ({ id:r.id, name:r.data.name, orgs:(T.players||[]).filter(p => p.player_id===r.id).map(p => p.org_id) })) }),
+    system_settings: () => sys() ? ok({ defaultClub: T.defaultClub||null }) : { data:null, error:{ message:'Only sys admins' } },
+    set_system_settings: a => { if (!sys()) return { data:null, error:{ message:'Only sys admins' } }; if ('defaultClub' in a.p_settings) T.defaultClub = a.p_settings.defaultClub || null; return ok({ defaultClub: T.defaultClub||null }); },
     my_notif_prefs: () => ok({...(T.notifPrefs||{}), vapid: T.vapid||null}),
     set_notif_prefs: a => { T.notifPrefs={...(T.notifPrefs||{}), ...a.p_prefs}; return ok(T.notifPrefs); },
     set_my_lang: a => { T.myLang=a.p_lang; return ok(null); },

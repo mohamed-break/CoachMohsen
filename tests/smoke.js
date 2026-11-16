@@ -124,7 +124,7 @@ const shared = () => {
 
   // Sys admin
   await run('sysadmin-users', asOwner(), async pg => {
-    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#team,#clubsettings,#orgs,#users,#notiflog,#appearance') throw new Error('tabs ' + t);
+    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#team,#clubsettings,#orgs,#users,#notiflog,#syssettings,#appearance') throw new Error('tabs ' + t);
     await pg.click('nav.tabs a[href="#users"]'); await pg.waitForSelector('.utable');
     const opts = await pg.$$eval(`select[data-setrole="${COACH_B.id}"] option`, o => o.map(x => x.value)); if (opts.join() !== 'player,sysadmin') throw new Error('roles ' + opts);
     await pg.selectOption(`select[data-setrole="${COACH_B.id}"]`, 'sysadmin'); await pg.waitForTimeout(400);
@@ -312,6 +312,20 @@ const shared = () => {
     if (!(await pg.isChecked('[data-clubset="suggestPlanned"]'))) throw new Error('suggestions not on by default');
     await pg.uncheck('[data-clubset="suggestPlanned"]'); await pg.waitForTimeout(300);
     if ((await pg.evaluate(() => window.__STUB__.orgs.find(o => o.id === 'freelance').settings || {})).suggestPlanned !== false) throw new Error('setting not saved');
+  });
+  await run('system-settings', asOwner(), async pg => {
+    await pg.click('nav.tabs a[href="#syssettings"]'); await pg.waitForSelector('[data-sysset="defaultClub"]');
+    await pg.selectOption('[data-sysset="defaultClub"]', 'freelance'); await pg.waitForTimeout(300);
+    if ((await pg.evaluate(() => window.__STUB__.defaultClub)) !== 'freelance') throw new Error('default club not saved');
+    if (!(await text(pg)).toLowerCase().includes('no default coach yet')) throw new Error('missing hint about the default coach');
+    await pg.click('[data-act="openClubSettings"]'); await pg.waitForSelector('[data-clubset="defaultCoach"]');
+    if (!(await text(pg)).includes("platform's default club")) throw new Error('club settings do not say this is the default club');
+    const opts = await pg.$$eval('[data-clubset="defaultCoach"] option', o => o.map(x => x.value).filter(Boolean));
+    if (!opts.length) throw new Error('no coaches to choose');
+    await pg.selectOption('[data-clubset="defaultCoach"]', opts[0]); await pg.waitForTimeout(300);
+    if ((await pg.evaluate(() => window.__STUB__.orgs.find(o => o.id === 'freelance').settings || {})).defaultCoach !== opts[0]) throw new Error('default coach not saved');
+    await pg.click('nav.tabs a[href="#syssettings"]'); await pg.waitForTimeout(300);
+    if (!(await text(pg)).includes('as players of')) throw new Error('summary does not name the coach');
   });
   const ghostsOf = async pg => { await pg.waitForSelector('#wkf-cancelled'); await pg.waitForTimeout(400); return pg.$$eval('.ghost', x => x.length); };
   await run('suggestions-on', asCoachA(), async pg => { if (!(await ghostsOf(pg))) throw new Error('no suggested sessions when the setting is on'); });
