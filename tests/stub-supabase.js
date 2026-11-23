@@ -156,6 +156,18 @@
       coaches: T.members.map(m => ({ id:m.user_id, name:name(m.user_id), orgs:[m.org_id] })), players: rows.filter(r => r.collection==='trainees').map(r => ({ id:r.id, name:r.data.name, orgs:(T.players||[]).filter(p => p.player_id===r.id).map(p => p.org_id) })) }),
     system_settings: () => sys() ? ok({ defaultClub: T.defaultClub||null }) : { data:null, error:{ message:'Only sys admins' } },
     set_system_settings: a => { if (!sys()) return { data:null, error:{ message:'Only sys admins' } }; if ('defaultClub' in a.p_settings) T.defaultClub = a.p_settings.defaultClub || null; return ok({ defaultClub: T.defaultClub||null }); },
+    delete_permissions: a => ok((T.members||[]).filter(m => m.org_id===a.p_org && m.role==='coach' && m.can_delete).map(m => m.user_id)),
+    set_delete_permission: a => { const adm = sys() || T.members.some(m => m.user_id===uid() && m.org_id===a.p_org && m.role==='club_admin'); if (!adm) return { data:null, error:{ message:'Only club admins' } };
+      const m = T.members.find(x => x.org_id===a.p_org && x.user_id===a.p_user && x.role==='coach'); if (!m) return { data:null, error:{ message:'Not a coach' } }; m.can_delete = !!a.p_allow; return ok(null); },
+    purge_session: a => { const i = rows.findIndex(r => r.collection==='sessions' && r.id===a.p_id); if (i<0) return { data:null, error:{ message:'Session not found' } };
+      const sd = rows[i]; const allowed = sys() || T.members.some(m => m.user_id===uid() && m.org_id===sd.data.clubId && (m.role==='club_admin' || (m.role==='coach' && m.can_delete && sd.data.coachId===uid())));
+      if (!allowed) return { data:null, error:{ message:'You are not allowed to delete sessions permanently' } };
+      (T.deletedLog = T.deletedLog||[]).unshift({ id: T.deletedLog.length+1, session_id: sd.id, club_id: sd.data.clubId, data: sd.data, deleted_at: new Date().toISOString(), deleted_by_name: name(uid()) });
+      rows.splice(i,1); for (let k=rows.length-1;k>=0;k--) if (rows[k].collection==='requests' && rows[k].data.sessionId===a.p_id) rows.splice(k,1); return ok(T.deletedLog.length); },
+    deleted_sessions_list: () => sys() ? ok((T.deletedLog||[]).map(l => ({ id:l.id, session_id:l.session_id, club_id:l.club_id, date:l.data.date, time:l.data.time, status:l.data.status, location:l.data.location,
+      players:(l.data.traineeIds||[]).map(x => (doc('trainees',x)||{data:{}}).data.name), deleted_at:l.deleted_at, deleted_by_name:l.deleted_by_name, restored_at:l.restored_at||null, requests:0, notifications:0 }))) : { data:null, error:{ message:'Only sys admins' } },
+    restore_session: a => { if (!sys()) return { data:null, error:{ message:'Only sys admins' } }; const l = (T.deletedLog||[]).find(x => x.id===a.p_log); if (!l || l.restored_at) return { data:null, error:{ message:'Not found' } };
+      rows.push({ collection:'sessions', id:l.session_id, data:l.data }); l.restored_at = new Date().toISOString(); return ok(l.session_id); },
     my_notif_prefs: () => ok({...(T.notifPrefs||{}), vapid: T.vapid||null}),
     set_notif_prefs: a => { T.notifPrefs={...(T.notifPrefs||{}), ...a.p_prefs}; return ok(T.notifPrefs); },
     set_my_lang: a => { T.myLang=a.p_lang; return ok(null); },

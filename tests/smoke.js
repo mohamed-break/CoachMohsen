@@ -124,7 +124,7 @@ const shared = () => {
 
   // Sys admin
   await run('sysadmin-users', asOwner(), async pg => {
-    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#team,#clubsettings,#orgs,#users,#notiflog,#syssettings,#appearance') throw new Error('tabs ' + t);
+    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#team,#clubsettings,#orgs,#users,#notiflog,#deletedlog,#syssettings,#appearance') throw new Error('tabs ' + t);
     await pg.click('nav.tabs a[href="#users"]'); await pg.waitForSelector('.utable');
     const opts = await pg.$$eval(`select[data-setrole="${COACH_B.id}"] option`, o => o.map(x => x.value)); if (opts.join() !== 'player,sysadmin') throw new Error('roles ' + opts);
     await pg.selectOption(`select[data-setrole="${COACH_B.id}"]`, 'sysadmin'); await pg.waitForTimeout(400);
@@ -326,6 +326,46 @@ const shared = () => {
     await pg.uncheck('#se-notify'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     d = await sess('cn3'); if (d.status !== 'cancelled' || d.notifyPlayers !== false) throw new Error('edit-form quiet cancel not saved ' + JSON.stringify(d));
     if ((await reqs()).includes('cn3')) throw new Error('player notice created for a quiet cancel (edit form)');
+  });
+
+  // Cancel button says whether players will be told
+  await run('cancel-button-label', asCoachA({ extra: [{ collection: 'sessions', id: 'lb1', data: { id: 'lb1', date: '2030-05-11', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('#trSessions [data-act="cancelSession"][data-id="lb1"]');
+    await pg.click('#trSessions [data-act="cancelSession"][data-id="lb1"]'); await pg.waitForSelector('#cs-notify');
+    const lbl = () => pg.textContent('.sheet button[type="submit"]');
+    if (!/notify players/i.test(await lbl())) throw new Error('ticked label: ' + await lbl());
+    await pg.uncheck('#cs-notify'); if (!/without notifying/i.test(await lbl())) throw new Error('unticked label: ' + await lbl());
+    await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+    await pg.click('#trSessions [data-act="editSession"][data-id="lb1"]'); await pg.waitForSelector('#se-status');
+    await pg.selectOption('#se-status', 'cancelled'); if (!/notify players/i.test(await lbl())) throw new Error('edit form label: ' + await lbl());
+    await pg.uncheck('#se-notify'); if (!/without notifying/i.test(await lbl())) throw new Error('edit form unticked label: ' + await lbl());
+    await pg.selectOption('#se-status', 'planned'); if ((await lbl()).trim() !== 'Save') throw new Error('label not back to Save');
+  });
+  // Permanent delete: coach needs permission from a club admin
+  await run('purge-no-permission', asCoachA({ extra: [{ collection: 'sessions', id: 'pg1', data: { id: 'pg1', date: '2030-05-12', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('#trSessions [data-act="editSession"][data-id="pg1"]');
+    await pg.click('#trSessions [data-act="editSession"][data-id="pg1"]'); await pg.waitForSelector('#se-status'); await pg.waitForTimeout(300);
+    if (await pg.$('.sheet [data-del]')) throw new Error('coach without permission can delete');
+  });
+  await run('purge-with-permission', (() => { const w = asCoachA({ extra: [{ collection: 'sessions', id: 'pg2', data: { id: 'pg2', date: '2030-05-13', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }); w.members.find(m => m.user_id === COACH_A.id && m.org_id === 'freelance').can_delete = true; return w; })(), async pg => {
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('#trSessions [data-act="editSession"][data-id="pg2"]'); await pg.waitForTimeout(300);
+    await pg.click('#trSessions [data-act="editSession"][data-id="pg2"]'); await pg.waitForSelector('.sheet [data-del]');
+    if (!/delete permanently/i.test(await pg.textContent('.sheet [data-del]'))) throw new Error('button label');
+    await pg.click('.sheet [data-del]'); await pg.click('.sheet [data-del]'); await pg.waitForTimeout(500);
+    if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'sessions' && d.id === 'pg2'))) throw new Error('session not deleted');
+    if (await pg.$('#trSessions [data-id="pg2"]')) throw new Error('still listed');
+  });
+  await run('purge-permission-admin', asOwner(), async pg => {
+    await pg.click('nav.tabs a[href="#team"]'); await pg.waitForSelector('[data-delperm]');
+    await pg.check('[data-delperm="' + COACH_A.id + '"]'); await pg.waitForTimeout(300);
+    if (!(await pg.evaluate(id => window.__STUB__.members.find(m => m.user_id === id && m.org_id === 'freelance').can_delete, COACH_A.id))) throw new Error('permission not saved');
+  });
+  await run('deleted-log-restore', { ...asOwner(), deletedLog: [{ id: 1, session_id: 'gone1', club_id: 'freelance', data: { id: 'gone1', date: '2030-06-01', time: '19:00', status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id }, deleted_at: new Date().toISOString(), deleted_by_name: 'Coach A' }] }, async pg => {
+    await pg.click('nav.tabs a[href="#deletedlog"]'); await pg.waitForSelector('[data-act="dlRestore"]');
+    if (!(await text(pg)).includes('Deleted by Coach A')) throw new Error('who deleted not shown');
+    await pg.click('[data-act="dlRestore"]'); await pg.click('[data-act="dlRestore"]'); await pg.waitForTimeout(500);
+    if (!(await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'sessions' && d.id === 'gone1')))) throw new Error('not restored');
+    if (!(await text(pg)).includes('Restored')) throw new Error('log does not show Restored');
   });
 
   // Arabic: time fields keep their value and show hours on the left
