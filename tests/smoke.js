@@ -306,6 +306,16 @@ const shared = () => {
     await pg.click('[data-act="editClub"]'); await pg.click('[data-addcourt]'); await pg.fill('#ct-en-4', 'Center Court'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues').data.courts); if (v.length !== 5 || v[4].name !== 'Center Court' || v[0].id !== 'padel-pro-c1') throw new Error('courts ' + JSON.stringify(v)); });
 
+  // Players list: each card counts only the sessions still ahead
+  await run('remaining-sessions', asCoachA({ extra: [
+      { collection: 'sessions', id: 'r1', data: { id: 'r1', date: '2030-03-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } },
+      { collection: 'sessions', id: 'r2', data: { id: 'r2', date: '2030-03-08', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } },
+      { collection: 'sessions', id: 'r3', data: { id: 'r3', date: '2030-03-15', time: '18:00', duration: 60, status: 'cancelled', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
+    await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('a[href="#trainee-t1"]');
+    const c = await pg.textContent('a[href="#trainee-t1"]');
+    if (!/2 remaining sessions/.test(c)) throw new Error('card shows: ' + c.replace(/\s+/g, ' ').slice(0, 200));
+  });
+
   // Player page shows the player's photo (initials when there is none)
   await run('player-photo', (() => { const w = asCoachA(); w.docs.find(d => d.id === 't1' && d.collection === 'trainees').data.linkedUserId = PLAYER.id;
       (w.users = w.users || []).some(u => u.id === PLAYER.id) || w.users.push(PLAYER);
