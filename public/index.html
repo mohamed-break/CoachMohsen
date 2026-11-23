@@ -103,6 +103,8 @@ header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px 0;f
 #viewSwitch button{border:0;background:transparent;color:#fff;opacity:.8;font:700 13px var(--body);padding:4px 12px;border-radius:999px;cursor:pointer}
 .clubsw{width:auto;max-width:200px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 12px;font:700 13px var(--body)}
 .clubsw option{color:#111}
+.trphoto{display:inline-flex;flex:none;border-radius:50%;box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--court-soft)}.trphoto .av{font-size:30px}.trphoto-link{border-radius:50%;flex:none}
+@media (max-width:520px){.trphoto .av{width:64px!important;height:64px!important;font-size:24px}}
 .nltable{width:100%;border-collapse:collapse;font-size:14px}
 .nltable th{text-align:start;font:700 12px var(--body);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);background:var(--sunk);white-space:nowrap}
 .nltable td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;min-width:0}
@@ -866,12 +868,16 @@ function trSessionsBlock(id){
   ${list.length?groups.map(g=>`<div class="daygroup"><div class="daylabel"><span class="d">${esc(fmtDay(g.d))}</span></div>${g.items.map(coachDayCard).join("")}</div>`).join("")
     +(list.length>lim?`<button class="btn sm" type="button" data-act="trSessMore">${t("showAll")} (${list.length})</button>`:"")
     :`<div class="card muted">${tab==="up"?t("noSessionsUp"):t("noSessionsPast")}</div>`}</div>`}
+// the player's account photo (or initials), large; tap to see it full size
+function trPhoto(tr){metaFresh();const m=(S.meta&&S.meta.byP[tr.id])||null,url=m&&avatarUrl(m.avatar_path);
+  const av=`<span class="trphoto">${avatarHtml(tr.name,m&&m.avatar_path,84)}</span>`;
+  return url?`<a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(tr.name)}" class="trphoto-link">${av}</a>`:av}
 function vTrainee(id){
   const tr=S.trainees[id];if(!tr)return`<a class="back" href="#trainees">← ${t("back")}</a>`;
   const h=historyFor(id);
   const side={drive:t("drive"),reves:t("reves"),both:t("both")}[tr.side]||"—",hand={right:t("right"),left:t("left")}[tr.hand]||"—";
   return`<div class="section"><a class="back" href="#trainees">${lang==="ar"?"→":"←"} ${t("trainees")}</a>
-  <div class="spread"><div class="hero"><span class="eyebrow">${t("trainees")}</span><h2>${esc(tr.name)}</h2></div><div class="row"><button class="btn" data-act="copyInvite" data-id="${id}">⧉ ${t("copyInvite")}</button><button class="btn" data-act="editTrainee" data-id="${id}">${t("edit")}</button></div></div>
+  <div class="spread"><div class="row trhead" style="gap:14px;flex-wrap:nowrap;min-width:0">${trPhoto(tr)}<div class="hero" style="min-width:0"><span class="eyebrow">${t("trainees")}</span><h2>${esc(tr.name)}</h2></div></div><div class="row"><button class="btn" data-act="copyInvite" data-id="${id}">⧉ ${t("copyInvite")}</button><button class="btn" data-act="editTrainee" data-id="${id}">${t("edit")}</button></div></div>
   <div class="ptabs" role="tablist"><button type="button" role="tab" data-trtab="profile" aria-selected="${S.trTab!=="log"}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>${t("trProfile")}</button>${S.isCoach?"":"<!--"}<button type="button" role="tab" data-trtab="log" aria-selected="${S.trTab==="log"}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${t("coachLogTab")} · ${Object.values(S.coachnotes).filter(x=>x.traineeId===id).length}</button>${S.isCoach?"":"-->"}</div>
   ${S.trTab==="log"&&S.isCoach?`</div>${coachLogBlock(tr)}`:`
   <div class="kv"><div><span>${t("level")}</span><b>${esc(tr.level??"—")||"—"}</b></div><div><span>${t("hand")}</span><b>${hand}</b></div><div><span>${t("side")}</span><b>${side}</b></div><div><span>${t("phone")}</span><b dir="ltr" style="text-align:start">${esc(tr.phone||"—")}</b></div><div><span>${t("startDate")}</span><b>${tr.startDate?esc(fmtShort(tr.startDate)):"—"}</b></div><div><span>${t("sessionsCount")}</span><b>${h.length}</b></div></div>

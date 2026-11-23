@@ -306,6 +306,18 @@ const shared = () => {
     await pg.click('[data-act="editClub"]'); await pg.click('[data-addcourt]'); await pg.fill('#ct-en-4', 'Center Court'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues').data.courts); if (v.length !== 5 || v[4].name !== 'Center Court' || v[0].id !== 'padel-pro-c1') throw new Error('courts ' + JSON.stringify(v)); });
 
+  // Player page shows the player's photo (initials when there is none)
+  await run('player-photo', (() => { const w = asCoachA(); w.docs.find(d => d.id === 't1' && d.collection === 'trainees').data.linkedUserId = PLAYER.id;
+      (w.users = w.users || []).some(u => u.id === PLAYER.id) || w.users.push(PLAYER);
+      w.profiles = [...(w.profiles || []).filter(p => p.id !== PLAYER.id), { id: PLAYER.id, email: PLAYER.email, full_name: 'Sample Player', avatar_path: PLAYER.id + '/a.jpg' }]; return w; })(), async pg => {
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('.trphoto');
+    await pg.waitForSelector('.trphoto img.av', { timeout: 4000 }).catch(() => {});
+    if (!(await pg.$('.trphoto img.av'))) throw new Error('no photo on the player page');
+    await pg.screenshot({ path: '/tmp/claude-0/-home-claude/b67e96e7-5324-5d1c-8f05-8bec10272ab4/scratchpad/shots/player-photo-page.png', clip: { x: 0, y: 0, width: 1280, height: 420 } });
+    await pg.evaluate(() => { location.hash = 'trainee-t2'; }); await pg.waitForTimeout(300);
+    if (await pg.$('.trphoto') && !(await pg.$('.trphoto span.av'))) throw new Error('no initials for a player without a photo');
+  });
+
   // Club settings: suggested planned sessions on/off
   await run('club-settings', asOwner(), async pg => {
     await pg.click('nav.tabs a[href="#clubsettings"]'); await pg.waitForSelector('[data-clubset="suggestPlanned"]');
