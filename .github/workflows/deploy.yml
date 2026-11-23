@@ -216,7 +216,10 @@ jobs:
           net=$(psql "$DB_URL" -tAc "select count(*) from pg_extension where extname = 'pg_net'")
           devs=$(psql "$DB_URL" -tAc "select count(*) from public.push_subscriptions")
           msgs=$(psql "$DB_URL" -tAc "select count(*) from public.notifications")
-          echo "status=ok · /api/push $fnok · reminders scheduled: $([ "$cron" = "1" ] && echo yes || echo no) · push hand-off: $([ "$net" = "1" ] && echo on || echo off) · devices: $devs · notifications so far: $msgs" >> "$GITHUB_OUTPUT"
+          # data check: planned sessions / weekly slots saved without a time
+          nots=$(psql "$DB_URL" -tAc "select count(*) from public.docs where collection = 'sessions' and coalesce(data->>'status','planned') = 'planned' and coalesce(data->>'time','') = '' and data->>'date' >= to_char(now() - interval '30 days','YYYY-MM-DD')")
+          nosl=$(psql "$DB_URL" -tAc "select count(*) from public.docs d, jsonb_array_elements(coalesce(d.data->'fixedSlots','[]')) x where d.collection in ('coachplayer','trainees') and coalesce(x->>'time','') = ''")
+          echo "status=ok · /api/push $fnok · reminders scheduled: $([ "$cron" = "1" ] && echo yes || echo no) · push hand-off: $([ "$net" = "1" ] && echo on || echo off) · devices: $devs · notifications so far: $msgs · without a time: $nots sessions, $nosl weekly slots" >> "$GITHUB_OUTPUT"
 
   report:
     needs: [database, site, auth, push]

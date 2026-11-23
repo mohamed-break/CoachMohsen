@@ -306,6 +306,23 @@ const shared = () => {
     await pg.click('[data-act="editClub"]'); await pg.click('[data-addcourt]'); await pg.fill('#ct-en-4', 'Center Court'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues').data.courts); if (v.length !== 5 || v[4].name !== 'Center Court' || v[0].id !== 'padel-pro-c1') throw new Error('courts ' + JSON.stringify(v)); });
 
+  // Arabic: time fields keep their value and show hours on the left
+  await run('arabic-time-fields', asCoachA({ extra: [{ collection: 'sessions', id: 'at1', data: { id: 'at1', date: '2030-04-01', time: '18:30', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
+    await pg.waitForSelector('#langBtn'); await pg.click('#langBtn'); await pg.waitForTimeout(300);
+    const hoursLeft = async sel => pg.$eval(sel, el => { const cs = getComputedStyle(el); return cs.direction === 'ltr'; });
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('#trSessions [data-act="editSession"][data-id="at1"]');
+    await pg.click('#trSessions [data-act="editSession"][data-id="at1"]'); await pg.waitForSelector('#se-time');
+    if ((await pg.inputValue('#se-time')) !== '18:30') throw new Error('session time field empty in Arabic: ' + await pg.inputValue('#se-time'));
+    if (!(await hoursLeft('#se-time'))) throw new Error('session time field is right-to-left');
+    await (await pg.$('#se-time')).screenshot({ path: '/tmp/claude-0/-home-claude/b67e96e7-5324-5d1c-8f05-8bec10272ab4/scratchpad/shots/ar-time-field.png' });
+    await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+    if (await pg.$('[data-act="editSlot"]')) { await pg.click('[data-act="editSlot"]'); await pg.waitForSelector('#sl-time');
+      if (!(await pg.inputValue('#sl-time'))) throw new Error('weekly slot time empty in Arabic');
+      if (!(await hoursLeft('#sl-time'))) throw new Error('weekly slot time field is right-to-left');
+      await pg.keyboard.press('Escape'); }
+    else throw new Error('no weekly slot to check');
+  });
+
   // Players list: each card counts only the sessions still ahead
   await run('remaining-sessions', asCoachA({ extra: [
       { collection: 'sessions', id: 'r1', data: { id: 'r1', date: '2030-03-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } },
