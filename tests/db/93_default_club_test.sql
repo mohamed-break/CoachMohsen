@@ -61,3 +61,16 @@ select pg_temp.ok((public.set_system_settings('{"defaultClub":""}') ->> 'default
 reset role;
 insert into auth.users (id, email) values ('00000000-0000-4000-8000-00000000d013', 'after@example.com');
 select pg_temp.ok(not exists (select 1 from public.docs where collection = 'trainees' and data ->> 'linkedUserId' = '00000000-0000-4000-8000-00000000d013'), 'no default club → no player again');
+
+-- cancelling without telling the players
+insert into auth.users (id, email) values ('00000000-0000-4000-8000-00000000d020', 'q.coach@example.com'), ('00000000-0000-4000-8000-00000000d021', 'q.player@example.com');
+insert into public.org_members (org_id, user_id, role) values ('dclub', '00000000-0000-4000-8000-00000000d020', 'coach');
+insert into public.docs (collection, id, data) values ('trainees', 'qp1', '{"id":"qp1","name":"Quiet","linkedUserId":"00000000-0000-4000-8000-00000000d021"}');
+select pg_temp.as_user('00000000-0000-4000-8000-00000000d020');
+insert into public.docs (collection, id, data) values
+  ('sessions', 'qs1', jsonb_build_object('id','qs1','date',to_char(now() at time zone 'Asia/Riyadh' + interval '4 days','YYYY-MM-DD'),'time','18:00','status','planned','traineeIds',jsonb_build_array('qp1'),'clubId','dclub','coachId','00000000-0000-4000-8000-00000000d020')),
+  ('sessions', 'qs2', jsonb_build_object('id','qs2','date',to_char(now() at time zone 'Asia/Riyadh' + interval '5 days','YYYY-MM-DD'),'time','18:00','status','planned','traineeIds',jsonb_build_array('qp1'),'clubId','dclub','coachId','00000000-0000-4000-8000-00000000d020'));
+update public.docs set data = data || '{"status":"cancelled","notifyPlayers":false,"cancelReason":"Rain"}' where collection = 'sessions' and id = 'qs1';
+select pg_temp.ok((select count(*) from public.notifications where user_id = '00000000-0000-4000-8000-00000000d021' and kind = 'cancelled') = 0, 'cancelled without telling the player');
+update public.docs set data = data || '{"status":"cancelled","notifyPlayers":true,"cancelReason":"Court closed"}' where collection = 'sessions' and id = 'qs2';
+select pg_temp.ok((select count(*) from public.notifications where user_id = '00000000-0000-4000-8000-00000000d021' and kind = 'cancelled' and body_en like '%Court closed%') = 1, 'player told, with the reason');

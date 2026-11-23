@@ -306,6 +306,28 @@ const shared = () => {
     await pg.click('[data-act="editClub"]'); await pg.click('[data-addcourt]'); await pg.fill('#ct-en-4', 'Center Court'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
     const v = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'venues').data.courts); if (v.length !== 5 || v[4].name !== 'Center Court' || v[0].id !== 'padel-pro-c1') throw new Error('courts ' + JSON.stringify(v)); });
 
+  // Cancelling: choose whether the players are told
+  await run('cancel-notify-choice', (() => { const w = asCoachA({ extra: [{ collection: 'sessions', id: 'cn1', data: { id: 'cn1', date: '2030-05-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'cn2', data: { id: 'cn2', date: '2030-05-02', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'cn3', data: { id: 'cn3', date: '2030-05-03', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }); w.docs.find(d => d.id === 't1' && d.collection === 'trainees').data.linkedUserId = PLAYER.id; return w; })(), async pg => {
+    const reqs = () => pg.evaluate(() => window.__STUB__.docs.filter(d => d.collection === 'requests' && d.data.status === 'coachCancelled').map(d => d.data.sessionId));
+    const sess = id => pg.evaluate(id => window.__STUB__.docs.find(d => d.collection === 'sessions' && d.id === id).data, id);
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('#trSessions [data-act="cancelSession"][data-id="cn1"]');
+    await pg.click('#trSessions [data-act="cancelSession"][data-id="cn1"]'); await pg.waitForSelector('#cs-notify');
+    if (!(await pg.isChecked('#cs-notify'))) throw new Error('notify not ticked by default');
+    await pg.uncheck('#cs-notify'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(400);
+    let d = await sess('cn1'); if (d.status !== 'cancelled' || d.notifyPlayers !== false) throw new Error('quiet cancel not saved ' + JSON.stringify(d));
+    if ((await reqs()).includes('cn1')) throw new Error('player notice created for a quiet cancel');
+    await pg.click('#trSessions [data-act="cancelSession"][data-id="cn2"]'); await pg.waitForSelector('#cs-notify');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(400);
+    d = await sess('cn2'); if (d.notifyPlayers !== true) throw new Error('notify flag not saved');
+    if (!(await reqs()).includes('cn2')) throw new Error('player not told');
+    await pg.click('#trSessions [data-act="editSession"][data-id="cn3"]'); await pg.waitForSelector('#se-status');
+    if (!(await pg.$eval('#se-notify-wrap', e => e.hidden))) throw new Error('choice shown before choosing Cancelled');
+    await pg.selectOption('#se-status', 'cancelled'); if (await pg.$eval('#se-notify-wrap', e => e.hidden)) throw new Error('choice not shown for Cancelled');
+    await pg.uncheck('#se-notify'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    d = await sess('cn3'); if (d.status !== 'cancelled' || d.notifyPlayers !== false) throw new Error('edit-form quiet cancel not saved ' + JSON.stringify(d));
+    if ((await reqs()).includes('cn3')) throw new Error('player notice created for a quiet cancel (edit form)');
+  });
+
   // Arabic: time fields keep their value and show hours on the left
   await run('arabic-time-fields', asCoachA({ extra: [{ collection: 'sessions', id: 'at1', data: { id: 'at1', date: '2030-04-01', time: '18:30', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
     await pg.waitForSelector('#langBtn'); await pg.click('#langBtn'); await pg.waitForTimeout(300);
