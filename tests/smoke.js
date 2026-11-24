@@ -351,6 +351,26 @@ const shared = () => {
     if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'requests' && d.data.status === 'coachCancelled'))) throw new Error('players told although unticked');
   });
 
+  // Player page: Cancelled and All tabs; select by status and date range
+  await run('trainee-tabs-filters', asCoachA({ extra: [{ collection: 'sessions', id: 'tf1', data: { id: 'tf1', date: '2030-09-02', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'tf2', data: { id: 'tf2', date: '2030-09-09', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'tf3', data: { id: 'tf3', date: '2030-09-16', time: '18:00', duration: 60, status: 'cancelled', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'tf4', data: { id: 'tf4', date: '2030-10-07', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('[data-trsess="cancelled"]');
+    if (await pg.$('#trSessions [data-id="tf3"]')) throw new Error('cancelled session shown under Upcoming');
+    await pg.click('[data-trsess="cancelled"]'); await pg.waitForTimeout(200);
+    if (!(await pg.$('#trSessions [data-act="editSession"][data-id="tf3"]'))) throw new Error('cancelled session not editable in Cancelled tab');
+    if (await pg.$('#trSessions [data-id="tf1"]')) throw new Error('planned session under Cancelled');
+    await pg.click('[data-trsess="all"]'); await pg.waitForTimeout(200);
+    for (const id of ['tf1', 'tf2', 'tf3', 'tf4']) if (!(await pg.$('#trSessions [data-act="editSession"][data-id="' + id + '"]'))) throw new Error('All tab misses ' + id);
+    await pg.click('[data-act="trSelOn"][data-tab="all"]'); await pg.waitForSelector('[data-trflt="status"]');
+    await pg.selectOption('[data-trflt="status"]', 'planned'); await pg.fill('[data-trflt="from"]', '2030-09-01'); await pg.fill('[data-trflt="to"]', '2030-09-30');
+    await pg.click('[data-act="trPickMatch"]'); await pg.waitForTimeout(200);
+    const picked = await pg.$$eval('[data-trpick]:checked', x => x.map(e => e.dataset.trpick).sort().join(','));
+    if (picked !== 'tf1,tf2') throw new Error('matching picked: ' + picked);
+    await pg.selectOption('[data-trflt="status"]', 'cancelled'); await pg.fill('[data-trflt="from"]', ''); await pg.fill('[data-trflt="to"]', '');
+    await pg.click('[data-act="trPickMatch"]'); await pg.waitForTimeout(200);
+    if ((await pg.$$eval('[data-trpick]:checked', x => x.map(e => e.dataset.trpick).join(','))) !== 'tf3') throw new Error('status filter');
+    if (!(await pg.$('[data-act="trBulkEdit"]:not([disabled])'))) throw new Error('bulk edit not available in All tab');
+  });
+
   // Bulk permanent delete from the player page
   await run('bulk-purge-no-permission', asCoachA({ extra: [{ collection: 'sessions', id: 'bp1', data: { id: 'bp1', date: '2030-08-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'bp2', data: { id: 'bp2', date: '2030-08-02', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
     await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('[data-act="trSelOn"]');
@@ -367,7 +387,6 @@ const shared = () => {
     if (!(await text(pg)).includes('2 of 2 sessions deleted permanently')) throw new Error('no summary');
     await pg.click('[data-trsess="past"]'); await pg.waitForSelector('[data-act="trSelOn"][data-tab="past"]');
     await pg.click('[data-act="trSelOn"][data-tab="past"]'); await pg.check('[data-trpick="bp5"]');
-    if (await pg.$('[data-act="trBulkEdit"]')) throw new Error('bulk edit offered for past sessions');
     await pg.click('[data-act="trBulkPurge"]'); await pg.click('[data-act="trBulkPurge"]'); await pg.waitForTimeout(500);
     if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'sessions' && d.id === 'bp5'))) throw new Error('past session not deleted');
   });
