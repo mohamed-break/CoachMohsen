@@ -71,8 +71,8 @@ const shared = () => {
   await run('header-user-sysadmin', asOwner(), async pg => {
     const c = await pg.innerText('#userChip'); if (!c.includes('Owner') || !c.includes('Sys admin') || (await pg.inputValue('#clubSwitch')) !== 'freelance') throw new Error('chip ' + c); });
   await run('coach-trainees', asCoachA(), async pg => {
-    await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForTimeout(300); const c = await pg.locator('.grid2 a.card').count(); if (c !== 1) throw new Error('trainees ' + c);
-    await pg.locator('.grid2 a.card').first().click(); await pg.waitForTimeout(300); await pg.waitForSelector('[data-trtab="log"]');
+    await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForTimeout(300); const c = await pg.locator('#trList a.card').count(); if (c !== 1) throw new Error('trainees ' + c);
+    await pg.locator('#trList a.card').first().click(); await pg.waitForTimeout(300); await pg.waitForSelector('[data-trtab="log"]');
     if (!(await text(pg)).includes('Every')) throw new Error('fixed slot (coach field) missing'); });
   await run('coach-add-note', asCoachA(), async pg => {
     await pg.click('[data-trtab="log"]'); const ta = pg.locator('textarea[data-clnew]'); await ta.fill('Smoke test note'); await pg.click('[data-act="addNote"]'); await pg.waitForTimeout(400);
@@ -207,7 +207,7 @@ const shared = () => {
     if (await pg.locator('.utable .av').count() < 3) throw new Error('no photos on Users');
     await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForTimeout(600); tx = await text(pg);
     if (!tx.includes('Last sign-in: 12 Nov 2026')) throw new Error('players last sign-in');
-    if (!(await pg.locator('.grid2 a.card .av').count())) throw new Error('no photos on Players');
+    if (!(await pg.locator('#trList a.card .av').count())) throw new Error('no photos on Players');
     await pg.click('#langBtn'); await pg.waitForTimeout(200); if (!(await pg.innerText('footer.sitefoot')).includes('التطوير بواسطة: محمد بريك')) throw new Error('arabic footer'); });
   await run('coach-cannot-manage-venues-skills', asCoachA(), async pg => {
     await pg.click('nav.tabs a[href="#clubs"]'); await pg.waitForTimeout(300);
@@ -349,6 +349,37 @@ const shared = () => {
     if (got[0].location !== 'Padel Pro') throw new Error('venue changed although kept');
     if (!(await text(pg)).includes('2 of 2 sessions updated')) throw new Error('no result summary');
     if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'requests' && d.data.status === 'coachCancelled'))) throw new Error('players told although unticked');
+  });
+
+  // Players page: one per row, search, drag to order, move to top/bottom
+  await run('players-order', (() => { const w = asCoachA(); ['Zed', 'Amy', 'Bob'].forEach((n, i) => { w.docs.push({ collection: 'trainees', id: 'po' + i, data: { id: 'po' + i, name: n } });
+      (w.players = w.players || []).push({ org_id: 'freelance', player_id: 'po' + i }); (w.enroll = w.enroll || []).push({ org_id: 'freelance', player_id: 'po' + i, coach_id: COACH_A.id }); }); return w; })(), async pg => {
+    await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('#trList .trrow');
+    const order = () => pg.$$eval('#trList .trrow', r => r.map(x => x.dataset.id));
+    const ids = await order(); if (ids.length < 3) throw new Error('rows ' + ids.length);
+    const tops = await pg.$$eval('#trList .trrow', r => r.map(x => Math.round(x.getBoundingClientRect().left)));
+    if (new Set(tops).size !== 1) throw new Error('not one player per row');
+    // drag the last row to the top
+    const last = (await pg.$$('#trList .draghandle')).pop(), first = (await pg.$$('#trList .draghandle'))[0];
+    const a = await last.boundingBox(), b = await first.boundingBox();
+    await pg.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await pg.mouse.down();
+    await pg.mouse.move(b.x + b.width / 2, b.y + 4, { steps: 8 }); await pg.mouse.move(b.x + b.width / 2, b.y + 2, { steps: 2 }); await pg.mouse.up(); await pg.waitForTimeout(300);
+    const after = await order(); if (after[0] !== ids[ids.length - 1]) throw new Error('drag did not move to top: ' + after.join());
+    const saved = await pg.evaluate(() => (window.__STUB__.playerOrder || {}).freelance || []); if (saved.join() !== after.join()) throw new Error('order not saved');
+    // move to bottom / top buttons
+    await pg.click('#trList .trrow:first-child [data-move="bottom"]'); await pg.waitForTimeout(200);
+    if ((await order()).pop() !== after[0]) throw new Error('move to bottom');
+    await pg.click('#trList .trrow:last-child [data-move="top"]'); await pg.waitForTimeout(200);
+    if ((await order())[0] !== after[0]) throw new Error('move to top');
+    // the saved order is used when the page is drawn again
+    await pg.click('nav.tabs a[href="#week"]'); await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('#trList .trrow');
+    if ((await order())[0] !== after[0]) throw new Error('order lost after leaving the page');
+    // search
+    await pg.fill('#trSearch', 'amy'); await pg.waitForTimeout(100);
+    const vis = await pg.$$eval('#trList .trrow:not([hidden])', r => r.map(x => x.dataset.id)); if (vis.join() !== 'po1') throw new Error('search: ' + vis.join());
+    await pg.fill('#trSearch', 'nobody-here'); if (await pg.$eval('.trnone', e => e.hidden)) throw new Error('no-match message');
+    await pg.fill('#trSearch', ''); await pg.click('[data-act="orderAZ"]'); await pg.waitForTimeout(300);
+    if ((await pg.evaluate(() => (window.__STUB__.playerOrder || {}).freelance))) throw new Error('Sort A-Z did not reset');
   });
 
   // Player page: Cancelled and All tabs; select by status and date range
