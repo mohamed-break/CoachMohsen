@@ -171,6 +171,7 @@
     bulk_session_notice: a => { (T.bulkNotices=T.bulkNotices||[]).push(a); return ok(1); },
     my_player_order: () => ok(T.playerOrder||{}),
     set_player_order: a => { T.playerOrder = { ...(T.playerOrder||{}) }; if ((a.p_ids||[]).length) T.playerOrder[a.p_org] = a.p_ids; else delete T.playerOrder[a.p_org]; return ok(null); },
+    touch_last_seen: () => { T.touched = (T.touched || 0) + 1; return ok(null); },
     my_notif_prefs: () => ok({...(T.notifPrefs||{}), vapid: T.vapid||null}),
     set_notif_prefs: a => { T.notifPrefs={...(T.notifPrefs||{}), ...a.p_prefs}; return ok(T.notifPrefs); },
     set_my_lang: a => { T.myLang=a.p_lang; return ok(null); },

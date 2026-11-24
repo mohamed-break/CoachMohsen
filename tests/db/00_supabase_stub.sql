@@ -16,3 +16,5 @@ create or replace function auth.uid() returns uuid language sql stable as $$ sel
 create or replace function auth.jwt() returns jsonb language sql stable as $$ select jsonb_build_object('email', current_setting('request.jwt.claim.email', true)) $$;
 grant execute on function auth.uid(), auth.jwt() to anon, authenticated;
 create publication supabase_realtime;
+-- signed-in sessions (Supabase keeps one per device; updated when the app refreshes its sign-in)
+create table if not exists auth.sessions (id uuid primary key default gen_random_uuid(), user_id uuid, created_at timestamptz default now(), updated_at timestamptz default now(), refreshed_at timestamp);

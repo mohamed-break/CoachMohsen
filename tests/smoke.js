@@ -203,10 +203,10 @@ const shared = () => {
   await run('footer-and-last-sign-in', (() => { const w = asOwner({ linked: true }); w.users.find(u => u.id === PLAYER.id).last_sign_in_at = '2026-11-12T18:40:00Z'; return w; })(), async pg => {
     const f = await pg.innerText('footer.sitefoot'); if (!f.includes('Developed by: Mohamed Break | 0548495149 | eng.mib@outlook.com')) throw new Error('footer ' + f);
     await pg.click('nav.tabs a[href="#users"]'); await pg.waitForTimeout(600); let tx = await text(pg);
-    if (!tx.includes('Last sign-in') || !tx.includes('12 Nov 2026') || !tx.includes('Never signed in')) throw new Error('users last sign-in');
+    if (!tx.includes('Last active') || !tx.includes('12 Nov 2026') || !tx.includes('Never signed in')) throw new Error('users last sign-in');
     if (await pg.locator('.utable .av').count() < 3) throw new Error('no photos on Users');
     await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForTimeout(600); tx = await text(pg);
-    if (!tx.includes('Last sign-in: 12 Nov 2026')) throw new Error('players last sign-in');
+    if (!tx.includes('Last active: 12 Nov 2026')) throw new Error('players last sign-in');
     if (!(await pg.locator('#trList a.card .av').count())) throw new Error('no photos on Players');
     await pg.click('#langBtn'); await pg.waitForTimeout(200); if (!(await pg.innerText('footer.sitefoot')).includes('التطوير بواسطة: محمد بريك')) throw new Error('arabic footer'); });
   await run('coach-cannot-manage-venues-skills', asCoachA(), async pg => {
