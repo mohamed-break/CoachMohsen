@@ -103,7 +103,7 @@ header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px 0;f
 #viewSwitch button{border:0;background:transparent;color:#fff;opacity:.8;font:700 13px var(--body);padding:4px 12px;border-radius:999px;cursor:pointer}
 .clubsw{width:auto;max-width:200px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 12px;font:700 13px var(--body)}
 .clubsw option{color:#111}
-.trlist{display:flex;flex-direction:column;gap:10px}
+.trlist{display:flex;flex-direction:column;gap:10px;position:relative}
 .trrow{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:6px;border-radius:16px}.trrow[hidden]{display:none}
 .trmove{display:flex;flex-direction:column;gap:6px}.trmove .btn{min-width:34px;padding:4px 8px;font-size:15px;line-height:1}
 .trsearch{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 12px;max-width:420px}
@@ -112,7 +112,13 @@ header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px 0;f
 .trrow>.card{min-width:0}
 .draghandle{display:flex;align-items:center;justify-content:center;width:34px;height:48px;border:0;border-radius:10px;background:none;color:var(--muted);cursor:grab;touch-action:none;padding:0}
 .draghandle svg{width:20px;height:20px;fill:currentColor}.draghandle:hover,.draghandle:focus-visible{background:var(--sunk);color:var(--ink);outline:none}
-.trrow.dragging{opacity:.92;position:relative;z-index:3}.trrow.dragging>.card{box-shadow:0 14px 34px rgba(5,12,30,.22);outline:2px solid var(--court)}
+.trrow{will-change:transform}
+.trrow.dragging{position:relative;z-index:5}.trrow.dragging>.card{animation:lift .18s ease-out}@keyframes lift{from{box-shadow:0 0 0 rgba(0,0,0,0)}}.trrow.dragging>.card{box-shadow:0 22px 48px rgba(5,12,30,.28),0 6px 14px rgba(5,12,30,.12);outline:2px solid var(--court);background:var(--surface)}
+.trlist.sorting .trrow:not(.dragging)>.card{transition:opacity .2s ease,filter .2s ease;opacity:.75}
+.trlist.sorting .trrow:not(.dragging) .trmove{opacity:.35}
+.trrow.dropped>.card{animation:settle .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes settle{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--court) 45%,transparent)}40%{transform:scale(1.012)}100%{box-shadow:0 0 0 12px transparent;transform:none}}
+@media (prefers-reduced-motion:reduce){.trrow.dropped>.card{animation:none}}
 .trrow.dragging .draghandle{cursor:grabbing;color:var(--court)}
 body:has(.trrow.dragging){user-select:none;-webkit-user-select:none}
 .trorderbar{margin:-4px 0 2px}
@@ -2128,15 +2134,30 @@ function orderedPlayers(){if(S.playerOrder==null){S.playerOrder={};sb&&sb.rpc("m
 async function savePlayerOrder(ids){S.playerOrder={...(S.playerOrder||{}),[S.club]:ids};
   try{const {error}=await sb.rpc("set_player_order",{p_org:S.club,p_ids:ids});throwIf(error)}catch(e){toast(e.message||t("error"))}}
 let drag=null;
+const reduceMotion=()=>{try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}};
+// slide the other rows to their new places (FLIP: measure, move, animate from the old spot)
+function flip(rows,first){if(reduceMotion())return;rows.forEach(r=>{const a=first.get(r);if(a==null)return;const d=a-r.getBoundingClientRect().top;if(!d)return;
+  r.style.transition="none";r.style.transform=`translateY(${d}px)`;requestAnimationFrame(()=>{r.style.transition="transform .22s cubic-bezier(.2,.8,.2,1)";r.style.transform=""})})}
+function dragPlace(y){const d=drag,natural=d.box.getBoundingClientRect().top+d.row.offsetTop;d.ty=y-d.grab-natural;d.row.style.transform=`translateY(${d.ty}px) scale(1.025) rotate(${Math.max(-1.2,Math.min(1.2,(y-d.lastY)*.08))}deg)`;d.lastY=y}
 document.addEventListener("pointerdown",e=>{const h=e.target.closest(".draghandle");if(!h||e.button>0)return;e.preventDefault();
-  const row=h.closest(".trrow");drag={row,box:row.parentElement,pid:e.pointerId,before:[...row.parentElement.children].map(r=>r.dataset.id).join()};
-  row.classList.add("dragging");try{h.setPointerCapture(e.pointerId)}catch(x){}});
+  const row=h.closest(".trrow"),r=row.getBoundingClientRect();
+  drag={row,box:row.parentElement,pid:e.pointerId,before:[...row.parentElement.children].map(x=>x.dataset.id).join(),grab:e.clientY-r.top,ty:0,lastY:e.clientY};
+  row.style.transition="none";row.classList.add("dragging");drag.box.classList.add("sorting");dragPlace(e.clientY);
+  try{navigator.vibrate&&navigator.vibrate(12)}catch(x){}
+  try{h.setPointerCapture(e.pointerId)}catch(x){}});
 document.addEventListener("pointermove",e=>{if(!drag||e.pointerId!==drag.pid)return;e.preventDefault();
-  const rows=[...drag.box.querySelectorAll(".trrow:not(.dragging)")];let before=null;
-  for(const r of rows){const b=r.getBoundingClientRect();if(e.clientY<b.top+b.height/2){before=r;break}}
-  if(before!==drag.row.nextElementSibling&&before!==drag.row)drag.box.insertBefore(drag.row,before);
-  if(e.clientY<70)scrollBy(0,-14);else if(e.clientY>innerHeight-70)scrollBy(0,14)},{passive:false});
-function endDrag(){if(!drag)return;const d=drag;drag=null;d.row.classList.remove("dragging");
+  const y=e.clientY,rows=[...drag.box.querySelectorAll(".trrow:not(.dragging):not([hidden])")];let before=null;
+  for(const r of rows){const b=r.getBoundingClientRect();if(y<b.top+b.height/2){before=r;break}}
+  if(before==null){const all=[...drag.box.children],lastVis=rows[rows.length-1];before=lastVis?lastVis.nextElementSibling:null;if(before===drag.row)before=drag.row.nextElementSibling;
+    if(lastVis&&all.indexOf(drag.row)>all.indexOf(lastVis))before=drag.row.nextElementSibling}
+  if(before!==drag.row&&before!==drag.row.nextElementSibling){const sibs=[...drag.box.children].filter(r=>r!==drag.row&&!r.hidden);
+    const first=new Map(sibs.map(r=>[r,r.getBoundingClientRect().top]));drag.box.insertBefore(drag.row,before);flip(sibs,first);
+    try{navigator.vibrate&&navigator.vibrate(5)}catch(x){}}
+  dragPlace(y);
+  if(y<80)scrollBy(0,-14);else if(y>innerHeight-80)scrollBy(0,14)},{passive:false});
+function endDrag(){if(!drag)return;const d=drag;drag=null;const row=d.row;d.box.classList.remove("sorting");
+  row.style.transition=reduceMotion()?"none":"transform .25s cubic-bezier(.2,.8,.2,1)";row.style.transform="";row.classList.remove("dragging");
+  row.classList.add("dropped");setTimeout(()=>{row.classList.remove("dropped");row.style.transition=""},450);
   const ids=[...d.box.children].map(r=>r.dataset.id);if(ids.join()!==d.before){savePlayerOrder(ids);toast(t("orderSaved"))}}
 document.addEventListener("pointerup",endDrag);document.addEventListener("pointercancel",endDrag);
 // search: hide players that don't match (keeps their place in the order)
@@ -2145,7 +2166,9 @@ document.addEventListener("input",e=>{if(e.target.id!=="trSearch")return;S.trQ=e
   const n=document.querySelector(".trnone");if(n)n.hidden=any});
 // move to top / bottom
 document.addEventListener("click",e=>{const b=e.target.closest("[data-move]");if(!b)return;const row=b.closest(".trrow"),box=row.parentElement;
-  if(b.dataset.move==="top")box.insertBefore(row,box.firstElementChild);else box.appendChild(row);
+  const sibs=[...box.children].filter(r=>!r.hidden),first=new Map(sibs.map(r=>[r,r.getBoundingClientRect().top]));
+  if(b.dataset.move==="top")box.insertBefore(row,box.firstElementChild);else box.appendChild(row);flip(sibs,first);
+  row.classList.add("dropped");setTimeout(()=>row.classList.remove("dropped"),450);
   savePlayerOrder([...box.children].map(r=>r.dataset.id));toast(b.dataset.move==="top"?t("movedTop"):t("movedBottom"));row.scrollIntoView({block:"nearest",behavior:"smooth"})});
 // keyboard: arrow up/down on the handle moves the player
 document.addEventListener("keydown",e=>{const h=e.target.closest&&e.target.closest(".draghandle");if(!h||(e.key!=="ArrowUp"&&e.key!=="ArrowDown"))return;e.preventDefault();

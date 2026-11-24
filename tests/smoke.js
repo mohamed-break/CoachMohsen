@@ -363,7 +363,7 @@ const shared = () => {
     const last = (await pg.$$('#trList .draghandle')).pop(), first = (await pg.$$('#trList .draghandle'))[0];
     const a = await last.boundingBox(), b = await first.boundingBox();
     await pg.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await pg.mouse.down();
-    await pg.mouse.move(b.x + b.width / 2, b.y + 4, { steps: 8 }); await pg.mouse.move(b.x + b.width / 2, b.y + 2, { steps: 2 }); await pg.mouse.up(); await pg.waitForTimeout(300);
+    await pg.mouse.move(b.x + b.width / 2, b.y + 40, { steps: 8 }); await pg.waitForTimeout(120); await pg.screenshot({ path: '/tmp/claude-0/-home-claude/b67e96e7-5324-5d1c-8f05-8bec10272ab4/scratchpad/shots/drag-mid.png' }); await pg.mouse.move(b.x + b.width / 2, b.y + 2, { steps: 4 }); await pg.mouse.up(); await pg.waitForTimeout(300);
     const after = await order(); if (after[0] !== ids[ids.length - 1]) throw new Error('drag did not move to top: ' + after.join());
     const saved = await pg.evaluate(() => (window.__STUB__.playerOrder || {}).freelance || []); if (saved.join() !== after.join()) throw new Error('order not saved');
     // move to bottom / top buttons
