@@ -328,6 +328,29 @@ const shared = () => {
     if ((await reqs()).includes('cn3')) throw new Error('player notice created for a quiet cancel (edit form)');
   });
 
+  // Bulk edit from the player page
+  await run('bulk-edit', asCoachA({ extra: [{ collection: 'sessions', id: 'bk1', data: { id: 'bk1', date: '2030-07-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'bk2', data: { id: 'bk2', date: '2030-07-08', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'bk3', data: { id: 'bk3', date: '2030-07-15', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('[data-act="trSelOn"]');
+    await pg.click('[data-act="trSelOn"]'); await pg.waitForSelector('[data-trpick="bk1"]');
+    await pg.check('[data-trpickall]'); await pg.waitForTimeout(150);
+    if (!(await pg.textContent('.bulkbar')).includes('3 selected')) throw new Error('select all: ' + await pg.textContent('.bulkbar'));
+    await pg.uncheck('[data-trpickall]'); await pg.waitForTimeout(150);
+    await pg.check('[data-trpick="bk1"]'); await pg.check('[data-trpick="bk2"]');
+    if (!(await pg.textContent('.bulkbar')).includes('2 selected')) throw new Error('count not shown');
+    await pg.click('[data-act="trBulkEdit"]'); await pg.waitForSelector('#bk-time');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(200);
+    if (!/at least one change/i.test(await pg.textContent('.sheet'))) throw new Error('empty bulk edit accepted');
+    await pg.screenshot({ path: '/tmp/claude-0/-home-claude/b67e96e7-5324-5d1c-8f05-8bec10272ab4/scratchpad/shots/bulk-sheet.png' });
+    await pg.fill('#bk-time', '19:30'); await pg.fill('#bk-dur', '90'); await pg.selectOption('#bk-status', 'cancelled'); await pg.uncheck('#bk-notify');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(600);
+    const got = await pg.evaluate(() => ['bk1', 'bk2', 'bk3'].map(id => window.__STUB__.docs.find(d => d.collection === 'sessions' && d.id === id).data));
+    for (const d of got.slice(0, 2)) if (d.time !== '19:30' || d.duration !== 90 || d.status !== 'cancelled' || d.notifyPlayers !== false || !d.bulkEdit) throw new Error('not applied ' + JSON.stringify(d));
+    if (got[2].time !== '18:00' || got[2].status !== 'planned') throw new Error('unselected session changed');
+    if (got[0].location !== 'Padel Pro') throw new Error('venue changed although kept');
+    if (!(await text(pg)).includes('2 of 2 sessions updated')) throw new Error('no result summary');
+    if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'requests' && d.data.status === 'coachCancelled'))) throw new Error('players told although unticked');
+  });
+
   // Cancel button says whether players will be told
   await run('cancel-button-label', asCoachA({ extra: [{ collection: 'sessions', id: 'lb1', data: { id: 'lb1', date: '2030-05-11', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
     await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('#trSessions [data-act="cancelSession"][data-id="lb1"]');
@@ -402,6 +425,9 @@ const shared = () => {
     await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('.trphoto');
     await pg.waitForSelector('.trphoto img.av', { timeout: 4000 }).catch(() => {});
     if (!(await pg.$('.trphoto img.av'))) throw new Error('no photo on the player page');
+    await pg.click('.trphoto-link'); await pg.waitForSelector('.photobox img');
+    if (pg.context().pages().length > 1) throw new Error('photo opened a new page');
+    await pg.keyboard.press('Escape'); await pg.waitForTimeout(150); if (await pg.$('.photobox')) throw new Error('pop-up did not close');
     await pg.screenshot({ path: '/tmp/claude-0/-home-claude/b67e96e7-5324-5d1c-8f05-8bec10272ab4/scratchpad/shots/player-photo-page.png', clip: { x: 0, y: 0, width: 1280, height: 420 } });
     await pg.evaluate(() => { location.hash = 'trainee-t2'; }); await pg.waitForTimeout(300);
     if (await pg.$('.trphoto') && !(await pg.$('.trphoto span.av'))) throw new Error('no initials for a player without a photo');
