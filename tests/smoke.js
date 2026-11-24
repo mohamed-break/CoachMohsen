@@ -201,14 +201,14 @@ const shared = () => {
     await pg.setViewportSize({ width: 390, height: 844 }); await pg.waitForTimeout(200);
     const r = await pg.locator(`[data-act="regPlayer"][data-id="${ADMIN.id}"]`).boundingBox(); if (!r || r.x + r.width > 390) throw new Error('button off screen on a phone'); });
   await run('footer-and-last-sign-in', (() => { const w = asOwner({ linked: true }); w.users.find(u => u.id === PLAYER.id).last_sign_in_at = '2026-11-12T18:40:00Z'; return w; })(), async pg => {
-    const f = await pg.innerText('footer.sitefoot'); if (!f.includes('Developed by Mohamed Break') || !f.includes('0548495149')) throw new Error('footer ' + f);
+    const f = await pg.innerText('footer.sitefoot'); if (!f.includes('Developed by: Mohamed Break | 0548495149 | eng.mib@outlook.com')) throw new Error('footer ' + f);
     await pg.click('nav.tabs a[href="#users"]'); await pg.waitForTimeout(600); let tx = await text(pg);
     if (!tx.includes('Last sign-in') || !tx.includes('12 Nov 2026') || !tx.includes('Never signed in')) throw new Error('users last sign-in');
     if (await pg.locator('.utable .av').count() < 3) throw new Error('no photos on Users');
     await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForTimeout(600); tx = await text(pg);
     if (!tx.includes('Last sign-in: 12 Nov 2026')) throw new Error('players last sign-in');
     if (!(await pg.locator('.grid2 a.card .av').count())) throw new Error('no photos on Players');
-    await pg.click('#langBtn'); await pg.waitForTimeout(200); if (!(await pg.innerText('footer.sitefoot')).includes('تطوير محمد بريك')) throw new Error('arabic footer'); });
+    await pg.click('#langBtn'); await pg.waitForTimeout(200); if (!(await pg.innerText('footer.sitefoot')).includes('التطوير بواسطة: محمد بريك')) throw new Error('arabic footer'); });
   await run('coach-cannot-manage-venues-skills', asCoachA(), async pg => {
     await pg.click('nav.tabs a[href="#clubs"]'); await pg.waitForTimeout(300);
     if (await pg.locator('[data-act="newClub"],[data-act="editClub"]').count()) throw new Error('coach can edit venues');
@@ -349,6 +349,27 @@ const shared = () => {
     if (got[0].location !== 'Padel Pro') throw new Error('venue changed although kept');
     if (!(await text(pg)).includes('2 of 2 sessions updated')) throw new Error('no result summary');
     if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'requests' && d.data.status === 'coachCancelled'))) throw new Error('players told although unticked');
+  });
+
+  // Bulk permanent delete from the player page
+  await run('bulk-purge-no-permission', asCoachA({ extra: [{ collection: 'sessions', id: 'bp1', data: { id: 'bp1', date: '2030-08-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'bp2', data: { id: 'bp2', date: '2030-08-02', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }), async pg => {
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('[data-act="trSelOn"]');
+    await pg.click('[data-act="trSelOn"]'); await pg.check('[data-trpick="bp1"]'); await pg.waitForTimeout(200);
+    if (await pg.$('[data-act="trBulkPurge"]')) throw new Error('coach without permission offered bulk delete');
+  });
+  await run('bulk-purge', (() => { const w = asCoachA({ extra: [{ collection: 'sessions', id: 'bp3', data: { id: 'bp3', date: '2030-08-03', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'bp4', data: { id: 'bp4', date: '2030-08-04', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'bp5', data: { id: 'bp5', date: '2020-08-05', time: '18:00', duration: 60, status: 'done', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'sessions', id: 'bp6', data: { id: 'bp6', date: '2020-08-06', time: '18:00', duration: 60, status: 'done', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }] }); w.members.find(m => m.user_id === COACH_A.id && m.org_id === 'freelance').can_delete = true; return w; })(), async pg => {
+    await pg.evaluate(() => { location.hash = 'trainee-t1'; }); await pg.waitForSelector('[data-act="trSelOn"]'); await pg.waitForTimeout(300);
+    await pg.click('[data-act="trSelOn"]'); await pg.check('[data-trpick="bp3"]'); await pg.check('[data-trpick="bp4"]');
+    await pg.click('[data-act="trBulkPurge"]'); if (!/again/i.test(await pg.textContent('[data-act="trBulkPurge"]'))) throw new Error('no confirm step');
+    await pg.click('[data-act="trBulkPurge"]'); await pg.waitForTimeout(600);
+    const left = await pg.evaluate(() => window.__STUB__.docs.filter(d => d.collection === 'sessions' && /^bp/.test(d.id)).map(d => d.id).sort().join(','));
+    if (left !== 'bp5,bp6') throw new Error('left: ' + left);
+    if (!(await text(pg)).includes('2 of 2 sessions deleted permanently')) throw new Error('no summary');
+    await pg.click('[data-trsess="past"]'); await pg.waitForSelector('[data-act="trSelOn"][data-tab="past"]');
+    await pg.click('[data-act="trSelOn"][data-tab="past"]'); await pg.check('[data-trpick="bp5"]');
+    if (await pg.$('[data-act="trBulkEdit"]')) throw new Error('bulk edit offered for past sessions');
+    await pg.click('[data-act="trBulkPurge"]'); await pg.click('[data-act="trBulkPurge"]'); await pg.waitForTimeout(500);
+    if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'sessions' && d.id === 'bp5'))) throw new Error('past session not deleted');
   });
 
   // Cancel button says whether players will be told
