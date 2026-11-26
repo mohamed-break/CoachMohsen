@@ -351,6 +351,24 @@ const shared = () => {
     if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'requests' && d.data.status === 'coachCancelled'))) throw new Error('players told although unticked');
   });
 
+  // Skills: the missing name is predicted (exact terms, close matches, and when opening a skill with one name)
+  await run('skill-predict', (() => { const w = asOwner(); w.docs.push({ collection: 'skills', id: 'skx', data: { id: 'skx', name_en: 'Bandeja', name_ar: '', category: 'overhead', clubId: 'freelance' } }); return w; })(), async pg => {
+    await pg.click('nav.tabs a[href="#skills"]'); await pg.waitForSelector('[data-act="editSkill"][data-id="skx"]');
+    await pg.click('[data-act="editSkill"][data-id="skx"]'); await pg.waitForSelector('#sk-ar'); await pg.waitForTimeout(150);
+    if ((await pg.inputValue('#sk-ar')) !== 'البانديخا') throw new Error('missing Arabic not predicted on open: ' + await pg.inputValue('#sk-ar'));
+    await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
+    await pg.click('[data-act="newSkill"]'); await pg.waitForSelector('#sk-en');
+    await pg.fill('#sk-en', 'forehand drive'); await pg.waitForTimeout(100);
+    const ar = await pg.inputValue('#sk-ar'); if (!ar) throw new Error('close match not filled');
+    if (await pg.$eval('#pred-ar', e => e.hidden)) throw new Error('no "check it" note for a guess');
+    await pg.fill('#sk-en', ''); await pg.fill('#sk-ar', 'فولي أمامية'); await pg.waitForTimeout(100);
+    if ((await pg.inputValue('#sk-en')) !== 'Forehand volley') throw new Error('Arabic to English not predicted: ' + await pg.inputValue('#sk-en'));
+    await pg.fill('#sk-ar', ''); await pg.fill('#sk-en', 'power smash drill'); await pg.waitForTimeout(100);
+    if (!(await pg.inputValue('#sk-ar'))) throw new Error('word-by-word guess not filled');
+    await pg.fill('#sk-en', 'My own name'); await pg.fill('#sk-ar', 'سماش'); await pg.waitForTimeout(100);
+    if ((await pg.inputValue('#sk-en')) !== 'My own name') throw new Error('typed name overwritten');
+  });
+
   // Players page: one per row, search, drag to order, move to top/bottom
   await run('players-order', (() => { const w = asCoachA(); ['Zed', 'Amy', 'Bob'].forEach((n, i) => { w.docs.push({ collection: 'trainees', id: 'po' + i, data: { id: 'po' + i, name: n } });
       (w.players = w.players || []).push({ org_id: 'freelance', player_id: 'po' + i }); (w.enroll = w.enroll || []).push({ org_id: 'freelance', player_id: 'po' + i, coach_id: COACH_A.id }); }); return w; })(), async pg => {
