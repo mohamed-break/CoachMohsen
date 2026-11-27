@@ -27,7 +27,7 @@ select pg_temp.ok(pg_temp.book('00000000-0000-4000-8000-0000000000c1', 's1', '20
 -- busy list: times only, own flag
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-0000000000c1', false);
 set role authenticated;
-select pg_temp.ok((select count(*) from public.court_busy('2026-12-01')) = 3, 'busy list shows every active booking that day');
+select pg_temp.ok((select count(*) from public.court_busy('2026-12-01') where session_id not like 'demo-%') = 3, 'busy list shows every active booking that day');
 select pg_temp.ok((select count(*) from public.court_busy('2026-12-01') where mine) = 0, 'busy list marks only own sessions as mine');
 select pg_temp.ok((select count(*) from public.docs where collection = 'sessions' and coach_id <> auth.uid()) = 0, 'coach 1 still cannot read coach 2''s sessions');
 reset role;

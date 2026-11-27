@@ -265,6 +265,34 @@ const shared = () => {
     await pg.click('[data-act="reqWithdraw"][data-sid="x9"]'); await pg.click('[data-act="reqWithdraw"][data-sid="x9"]'); await pg.waitForTimeout(500);
     if (await pg.evaluate(() => window.__STUB__.docs.some(d => d.collection === 'requests'))) throw new Error('not withdrawn');
     await pg.waitForSelector('[data-act="reqCancel"][data-sid="x9"]:not([data-resend])', { timeout: 3000 }); });
+  // Approving a cancellation: optional make-up session
+  const newSessions = pg => pg.evaluate(() => window.__STUB__.docs.filter(d => d.collection === 'sessions' && d.data.makeupFor === 'mk1').map(d => d.data));
+  await run('makeup-from-schedule', asCoachA({ linked: true, extra: [{ collection: 'sessions', id: 'mk1', data: { id: 'mk1', date: '2030-01-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'requests', id: 'mk1:' + PLAYER.id, data: { sessionId: 'mk1', playerUid: PLAYER.id, playerId: 't1', coachId: COACH_A.id, clubId: 'freelance', status: 'pending', reason: 'Travel', date: '2030-01-01', time: '18:00' } }] }), async pg => {
+    await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('[data-act="approveCancel"]'); await pg.click('[data-act="approveCancel"]'); await pg.waitForSelector('#mk-on');
+    if (!(await pg.$eval('#mk-box', e => e.hidden))) throw new Error('make-up options shown before ticking');
+    await pg.check('#mk-on'); if (!/make-up/i.test(await pg.textContent('.sheet button[type="submit"]'))) throw new Error('button label');
+    if (!/fixed weekly schedule/i.test(await pg.textContent('#mk-box'))) throw new Error('schedule not used');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    const mk = await newSessions(pg); if (mk.length !== 1) throw new Error('make-up sessions: ' + mk.length);
+    if (mk[0].date !== '2030-01-08' || mk[0].time !== '18:00' || mk[0].traineeIds.join() !== 't1') throw new Error('wrong make-up ' + JSON.stringify(mk[0]));
+    const r = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'requests').data);
+    if (r.status !== 'approved' || r.makeupSessionId !== mk[0].id) throw new Error('request not approved/linked ' + JSON.stringify(r));
+  });
+  await run('makeup-skipped', asCoachA({ linked: true, extra: [{ collection: 'sessions', id: 'mk1', data: { id: 'mk1', date: '2030-01-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'requests', id: 'mk1:' + PLAYER.id, data: { sessionId: 'mk1', playerUid: PLAYER.id, playerId: 't1', coachId: COACH_A.id, clubId: 'freelance', status: 'pending', reason: 'Travel', date: '2030-01-01', time: '18:00' } }] }), async pg => {
+    await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('[data-act="approveCancel"]'); await pg.click('[data-act="approveCancel"]'); await pg.waitForSelector('#mk-on');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(400);
+    if ((await newSessions(pg)).length) throw new Error('make-up created although not chosen');
+    if ((await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'requests').data.status)) !== 'approved') throw new Error('not approved');
+  });
+  await run('makeup-manual', (() => { const w = asCoachA({ linked: true, extra: [{ collection: 'sessions', id: 'mk1', data: { id: 'mk1', date: '2030-01-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'requests', id: 'mk1:' + PLAYER.id, data: { sessionId: 'mk1', playerUid: PLAYER.id, playerId: 't1', coachId: COACH_A.id, clubId: 'freelance', status: 'pending', reason: 'Travel', date: '2030-01-01', time: '18:00' } }] }); w.docs.filter(d => d.collection === 'coachplayer' || d.collection === 'trainees').forEach(d => { delete d.data.fixedSlots; });
+      w.docs = w.docs.filter(d => !(d.collection === 'sessions' && d.id !== 'mk1')); return w; })(), async pg => {
+    await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('[data-act="approveCancel"]'); await pg.click('[data-act="approveCancel"]'); await pg.waitForSelector('#mk-on');
+    await pg.check('#mk-on'); if (await pg.$eval('#mk-manual', e => e.hidden)) throw new Error('manual entry not offered');
+    if (!/no fixed schedule/i.test(await pg.textContent('#mk-box'))) throw new Error('no-pattern message missing');
+    await pg.fill('#mk-date', '2030-01-05'); await pg.fill('#mk-time', '20:15');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    const mk = await newSessions(pg); if (mk.length !== 1 || mk[0].date !== '2030-01-05' || mk[0].time !== '20:15') throw new Error('manual make-up ' + JSON.stringify(mk));
+  });
   await run('coach-sees-request', asCoachA({ linked: true, extra: [{ collection: 'requests', id: 'x1:' + PLAYER.id, data: { sessionId: 'x1', playerUid: PLAYER.id, playerId: 't1', coachId: COACH_A.id, clubId: 'freelance', status: 'pending', reason: 'Sick', date: '2026-10-28', time: '18:00' } }] }), async pg => {
     await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('[data-act="declineCancel"]'); await pg.click('[data-act="declineCancel"]'); await pg.waitForTimeout(400);
     const r = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'requests').data); if (r.status !== 'declined' || r.seen !== false) throw new Error('not declined ' + JSON.stringify(r)); });
