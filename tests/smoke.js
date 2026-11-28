@@ -124,7 +124,7 @@ const shared = () => {
 
   // Sys admin
   await run('sysadmin-users', asOwner(), async pg => {
-    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#team,#clubsettings,#orgs,#users,#notiflog,#deletedlog,#syssettings,#appearance') throw new Error('tabs ' + t);
+    const t = await tabs(pg); if (t.join() !== '#week,#trainees,#skills,#clubs,#subs,#team,#clubsettings,#orgs,#users,#notiflog,#deletedlog,#syssettings,#appearance') throw new Error('tabs ' + t);
     await pg.click('nav.tabs a[href="#users"]'); await pg.waitForSelector('.utable');
     const opts = await pg.$$eval(`select[data-setrole="${COACH_B.id}"] option`, o => o.map(x => x.value)); if (opts.join() !== 'player,sysadmin') throw new Error('roles ' + opts);
     await pg.selectOption(`select[data-setrole="${COACH_B.id}"]`, 'sysadmin'); await pg.waitForTimeout(400);
@@ -267,6 +267,53 @@ const shared = () => {
     await pg.waitForSelector('[data-act="reqCancel"][data-sid="x9"]:not([data-resend])', { timeout: 3000 }); });
   // Approving a cancellation: optional make-up session
   const newSessions = pg => pg.evaluate(() => window.__STUB__.docs.filter(d => d.collection === 'sessions' && d.data.makeupFor === 'mk1').map(d => d.data));
+  // ---- subscriptions ----
+  const PRICES = [{ org: 'freelance', coach: '', sessions: 4, single: 800, group: 500, validity: 30 }, { org: 'freelance', coach: '', sessions: 8, single: 1500, group: 900, validity: 60 }];
+  const withSubs = (w, o = {}) => { w.prices = JSON.parse(JSON.stringify(PRICES)); Object.assign(w, o); return w; };
+  const SUB1 = { id: 'sub1', org: 'freelance', coach: COACH_A.id, player: 't1', kind: 'single', sessions: 4, start: '2026-01-01', end: '2099-01-01', listPrice: 800, price: 800, reason: '', payStatus: 'unpaid', paid: '', method: 'cash', notes: '', created_by: OWNER.id };
+  await run('subs-price-list', withSubs(asOwner()), async pg => {
+    await pg.waitForSelector('#priceCard'); await pg.fill('#priceCard [data-prrow="12"] [data-k="single"]', '2100'); await pg.fill('#priceCard [data-prrow="12"] [data-k="validity"]', '90');
+    await pg.click('[data-act="prSave"]'); await pg.waitForTimeout(400);
+    const r = await pg.evaluate(() => window.__STUB__.prices.find(x => x.sessions === 12)); if (!r || r.single !== 2100 || r.validity !== 90 || r.coach !== '') throw new Error('price not saved ' + JSON.stringify(r)); }, '#clubsettings');
+  await run('subs-new-package', withSubs(asOwner()), async pg => {
+    await pg.waitForSelector('[data-act="pkNew"]'); await pg.click('[data-act="pkNew"]'); await pg.waitForSelector('#pk-chips [data-size="8"]'); await pg.click('#pk-chips [data-size="8"]');
+    if (!(await pg.textContent('#pk-list')).includes('1,500')) throw new Error('list price ' + await pg.textContent('#pk-list'));
+    if ((await pg.inputValue('#pk-days')) !== '60') throw new Error('validity not filled');
+    const st = await pg.inputValue('#pk-start'), end = await pg.inputValue('#pk-end'); if ((new Date(end) - new Date(st)) / 864e5 !== 59) throw new Error('end date ' + st + ' ' + end);
+    await pg.check('#pk-special'); await pg.fill('#pk-price', '1300'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(300);
+    if (!/reason/i.test(await text(pg))) throw new Error('special price without reason accepted');
+    await pg.fill('#pk-reason', 'Family discount'); await pg.selectOption('#pk-pay', 'partial'); await pg.fill('#pk-paid', '500'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(600);
+    const r = await pg.evaluate(() => window.__STUB__.lastSub);
+    if (!r || r.sessions !== 8 || r.price !== 1300 || r.listPrice !== 1500 || r.reason !== 'Family discount' || r.payStatus !== 'partial' || r.paid !== '500' || r.coach !== COACH_A.id) throw new Error('package ' + JSON.stringify(r));
+    await pg.waitForSelector('.subcard'); const tx = await text(pg); if (!tx.includes('Special price') || !tx.includes('Partly paid')) throw new Error('card not shown'); }, '#trainee-t1');
+  await run('subs-unpackaged-and-eligibility', withSubs(asOwner()), async pg => {
+    await pg.waitForSelector('#pkSection [data-elig]'); const tx = await text(pg); if (!/sessions? without a package/i.test(tx)) throw new Error('unpackaged notice missing');
+    await pg.uncheck('#pkSection [data-elig]'); await pg.waitForTimeout(300);
+    if ((await pg.evaluate(() => window.__STUB__.elig['freelance|t1'])) !== false) throw new Error('eligibility not saved'); }, '#trainee-t1');
+  await run('subs-tab', withSubs(asOwner(), { subs: [SUB1] }), async pg => {
+    await pg.waitForSelector('.stats'); const tx = await text(pg); if (!tx.includes('Revenue') || !tx.includes('Unpaid')) throw new Error('overview ' + tx.slice(0, 200));
+    await pg.click('[data-ovview="unpaid"]'); await pg.waitForTimeout(200); if (!(await pg.locator('a.card[href="#trainee-t1"]').count())) throw new Error('unpaid filter empty'); }, '#subs');
+  await run('subs-default-coach', (() => { const w = withSubs(asCoachA()); w.orgs[0].settings = { defaultCoach: COACH_A.id, defaultCoachManagesSubs: true }; return w; })(), async pg => {
+    await pg.waitForSelector('nav.tabs a[href="#subs"]'); }, '#week');
+  await run('subs-book-fixed-schedule', (() => { const w = withSubs(asCoachA()); w.orgs[0].settings = { defaultCoach: COACH_A.id, defaultCoachManagesSubs: true }; return w; })(), async pg => {
+    const n0 = await pg.evaluate(() => window.__STUB__.docs.filter(d => d.collection === 'sessions').length);
+    await pg.waitForSelector('[data-act="pkNew"]'); await pg.click('[data-act="pkNew"]'); await pg.waitForSelector('#pk-chips [data-size="4"]'); await pg.click('#pk-chips [data-size="4"]');
+    if (!(await pg.isChecked('#pk-book'))) throw new Error('booking option missing');
+    await pg.fill('#pk-start', '2030-03-01'); await pg.dispatchEvent('#pk-start', 'change'); await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(1500);
+    const nw = await pg.evaluate(() => window.__STUB__.docs.filter(d => d.collection === 'sessions' && d.data.date >= '2030-03-01').map(d => d.data));
+    const u = await pg.evaluate(async () => (await window.supabase.createClient().rpc('package_usage', { p_player: 't1' })).data.packages[0]);
+    if (!nw.length || nw.some(x => !(x.traineeIds || []).includes('t1')) || u.unbooked !== 0 || u.used + u.booked !== 4) throw new Error('booked ' + nw.length + ' ' + JSON.stringify(u)); }, '#trainee-t1');
+  await run('subs-coach-no-access', withSubs(asCoachA()), async pg => {
+    await pg.waitForTimeout(500); if (await pg.locator('nav.tabs a[href="#subs"]').count()) throw new Error('plain coach sees subscriptions'); }, '#week');
+  await run('subs-player-view', { ...shared(), user: PLAYER, subs: [SUB1], docs: (() => { const w = shared(); w.docs.find(d => d.id === 't1' && d.collection === 'trainees').data.linkedUserId = PLAYER.id; return w.docs; })() }, async pg => {
+    await pg.waitForSelector('.subcard'); const tx = await text(pg); if (!tx.includes('My packages')) throw new Error('no my packages');
+    if (await pg.locator('.subcard [data-act="pkEdit"]').count()) throw new Error('player can edit'); if (tx.includes('800 SAR')) throw new Error('price shown to player'); });
+  await run('cancel-not-eligible-charged', (() => { const w = asCoachA({ linked: true, extra: [{ collection: 'sessions', id: 'mk1', data: { id: 'mk1', date: '2030-01-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'requests', id: 'mk1:' + PLAYER.id, data: { sessionId: 'mk1', playerUid: PLAYER.id, playerId: 't1', coachId: COACH_A.id, clubId: 'freelance', status: 'pending', reason: 'Travel', date: '2030-01-01', time: '18:00' } }] }); w.elig = { 'freelance|t1': false }; return w; })(), async pg => {
+    await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('[data-act="approveCancel"]'); await pg.click('[data-act="approveCancel"]'); await pg.waitForSelector('.sheet'); await pg.waitForTimeout(500);
+    if (!/not eligible/i.test(await pg.textContent('.sheet'))) throw new Error('not-eligible notice missing');
+    if (await pg.locator('#mk-on').isVisible()) throw new Error('make-up offered to ineligible player');
+    await pg.click('.sheet button[type="submit"]'); await pg.waitForTimeout(500);
+    const r = await pg.evaluate(() => window.__STUB__.docs.find(d => d.collection === 'requests').data); if (r.status !== 'approved' || r.charged !== true) throw new Error('request ' + JSON.stringify(r)); });
   await run('makeup-from-schedule', asCoachA({ linked: true, extra: [{ collection: 'sessions', id: 'mk1', data: { id: 'mk1', date: '2030-01-01', time: '18:00', duration: 60, status: 'planned', location: 'Padel Pro', traineeIds: ['t1'], clubId: 'freelance', coachId: COACH_A.id } }, { collection: 'requests', id: 'mk1:' + PLAYER.id, data: { sessionId: 'mk1', playerUid: PLAYER.id, playerId: 't1', coachId: COACH_A.id, clubId: 'freelance', status: 'pending', reason: 'Travel', date: '2030-01-01', time: '18:00' } }] }), async pg => {
     await pg.click('nav.tabs a[href="#trainees"]'); await pg.waitForSelector('[data-act="approveCancel"]'); await pg.click('[data-act="approveCancel"]'); await pg.waitForSelector('#mk-on');
     if (!(await pg.$eval('#mk-box', e => e.hidden))) throw new Error('make-up options shown before ticking');

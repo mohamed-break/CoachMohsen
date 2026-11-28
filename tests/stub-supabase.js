@@ -26,6 +26,21 @@
   const deep = (a,b)=> (a&&b&&typeof a==='object'&&typeof b==='object'&&!Array.isArray(a)&&!Array.isArray(b))
     ? Object.keys({...a,...b}).reduce((o,k)=>(o[k]= k in b ? (k in a ? deep(a[k],b[k]) : b[k]) : a[k], o),{}) : b;
   const hex = () => Math.random().toString(16).slice(2, 14);
+  const subsMgr = o => { if (sys() || isAdmin(o)) return true; const st = (T.orgs.find(x => x.id===o)||{}).settings || {}; return st.defaultCoach===uid() && st.defaultCoachManagesSubs===true; };
+  function usage(pid){ const today = new Date().toISOString().slice(0,10), subs = (T.subs||[]).filter(x => x.player===pid).sort((x,y) => (x.start>y.start?1:-1));
+    const pk = subs.map(x => ({ id:x.id, org_id:x.org, coach_id:x.coach, coach_name:name(x.coach), org_name:(T.orgs.find(o => o.id===x.org)||{}).name, kind:x.kind, sessions:+x.sessions, start_date:x.start, end_date:x.end||null,
+      list_price:x.listPrice===''?null:+x.listPrice, price:+x.price, price_reason:x.reason||'', pay_status:x.payStatus, paid_amount:x.paid===''?null:+x.paid, pay_method:x.method, notes:x.notes||'',
+      created_at:x.created_at||new Date().toISOString(), created_by_name:name(x.created_by), used:0, booked:0, charged:0 }));
+    const un = {};
+    rows.filter(r => r.collection==='sessions' && (r.data.traineeIds||[]).includes(pid) && r.data.status!=='cancelled' && !(r.data.excused||[]).includes(pid))
+      .sort((x,y) => ((x.data.date+x.data.time) > (y.data.date+y.data.time) ? 1 : -1)).forEach(r => { const d = r.data, past = d.status==='done' || d.date < today;
+        const p = pk.find(p => p.coach_id===d.coachId && p.org_id===d.clubId && p.used+p.booked < p.sessions && (!p.end_date || d.date <= p.end_date));
+        if (p) { if (past) p.used++; else p.booked++; }
+        else { const k = d.clubId+'|'+d.coachId; un[k] = un[k] || { org_id:d.clubId, coach_id:d.coachId, coach_name:name(d.coachId), count:0, sessions:[] }; un[k].count++; un[k].sessions.push({ id:r.id, date:d.date, time:d.time }); } });
+    pk.forEach(p => { p.remaining = p.sessions - p.used; p.unbooked = p.sessions - p.used - p.booked;
+      p.state = p.used >= p.sessions ? 'finished' : p.end_date && p.end_date < today ? 'expired' : p.start_date > today ? 'upcoming' : 'active'; });
+    const el = {}; (T.players||[]).filter(c => c.player_id===pid).forEach(c => { const k = c.org_id+'|'+pid; el[c.org_id] = T.elig && k in T.elig ? T.elig[k] : true; });
+    return { packages:pk, unpackaged:Object.values(un), eligible:el }; }
   function q(table){
     let filters=[], op='select', payload=null, single=false, rng=null;
     const src = table==='docs' ? rows.filter(canRead)
@@ -169,6 +184,24 @@
     restore_session: a => { if (!sys()) return { data:null, error:{ message:'Only sys admins' } }; const l = (T.deletedLog||[]).find(x => x.id===a.p_log); if (!l || l.restored_at) return { data:null, error:{ message:'Not found' } };
       rows.push({ collection:'sessions', id:l.session_id, data:l.data }); l.restored_at = new Date().toISOString(); return ok(l.session_id); },
     bulk_session_notice: a => { (T.bulkNotices=T.bulkNotices||[]).push(a); return ok(1); },
+    // subscriptions (simplified version of migration 0025)
+    price_list: a => ok((T.prices||[]).filter(r => r.org===a.p_org).map(r => ({ coach:r.coach||null, sessions:r.sessions, single:r.single, group:r.group, validity:r.validity }))),
+    set_price_list: a => { if (!subsMgr(a.p_org)) return { data:null, error:{ message:'Not allowed to manage subscriptions' } };
+      T.prices = (T.prices||[]).filter(r => !(r.org===a.p_org && (r.coach||'')===(a.p_coach||''))).concat((a.p_rows||[]).map(r => ({ ...r, org:a.p_org, coach:a.p_coach||'' })));
+      return ok((T.prices||[]).filter(r => r.org===a.p_org).map(r => ({ coach:r.coach||null, sessions:r.sessions, single:r.single, group:r.group, validity:r.validity }))); },
+    save_subscription: a => { const p = a.p; if (!subsMgr(p.org)) return { data:null, error:{ message:'Not allowed to manage subscriptions' } }; T.subs = T.subs||[];
+      const id = p.id || ('sub-' + hex()); const old = T.subs.find(x => x.id===id); const rec = { ...(old||{}), ...p, id, created_by: old ? old.created_by : uid() };
+      if (old) Object.assign(old, rec); else T.subs.push(rec); T.lastSub = rec; return ok(id); },
+    delete_subscription: a => { T.subs = (T.subs||[]).filter(x => x.id!==a.p_id); return ok(null); },
+    set_makeup_eligible: a => { if (!subsMgr(a.p_org)) return { data:null, error:{ message:'Not allowed' } }; (T.elig = T.elig||{})[a.p_org+'|'+a.p_player] = !!a.p_value; return ok(null); },
+    package_usage: a => ok(usage(a.p_player)),
+    subs_overview: a => { if (!subsMgr(a.p_org)) return { data:null, error:{ message:'Not allowed' } };
+      const pids = [...new Set([...(T.subs||[]).filter(x => x.org===a.p_org).map(x => x.player), ...rows.filter(r => r.collection==='trainees').map(r => r.id)])];
+      const pk = [], un = []; pids.forEach(pid => { const u = usage(pid), nm = (doc('trainees', pid)||{data:{}}).data.name;
+        u.packages.filter(p => p.org_id===a.p_org).forEach(p => pk.push({ ...p, player_id:pid, player_name:nm })); u.unpackaged.filter(x => x.org_id===a.p_org).forEach(x => un.push({ ...x, player_id:pid, player_name:nm })); });
+      const m = new Date().toISOString().slice(0,7), mine = pk.filter(p => (p.created_at||'').startsWith(m)); const by = {};
+      mine.forEach(p => { by[p.coach_id] = by[p.coach_id] || { coach_id:p.coach_id, coach_name:p.coach_name, total:0 }; by[p.coach_id].total += +p.price || 0; });
+      return ok({ packages:pk, unpackaged:un, revenue:{ month:m, total:mine.reduce((t,p) => t + (+p.price||0), 0), byCoach:Object.values(by) } }); },
     my_player_order: () => ok(T.playerOrder||{}),
     set_player_order: a => { T.playerOrder = { ...(T.playerOrder||{}) }; if ((a.p_ids||[]).length) T.playerOrder[a.p_org] = a.p_ids; else delete T.playerOrder[a.p_org]; return ok(null); },
     touch_last_seen: () => { T.touched = (T.touched || 0) + 1; return ok(null); },
